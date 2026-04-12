@@ -8,14 +8,14 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'BabyLog',
         short_name: 'BabyLog',
         description: 'Track newborn feeding and diaper changes',
-        theme_color: '#0F1419',
-        background_color: '#0F1419',
+        theme_color: '#0B0E13',
+        background_color: '#0B0E13',
         display: 'standalone',
         orientation: 'portrait',
         start_url: '/',
@@ -39,7 +39,12 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+        // Force new service worker to take over immediately
+        skipWaiting: true,
+        clientsClaim: true,
+        // Don't cache Firebase or API calls
+        navigateFallbackDenylist: [/^\/api/],
       },
     }),
   ],

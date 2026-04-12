@@ -244,9 +244,55 @@ export default function SettingsScreen() {
         </>
       )}
 
-      <div className="mt-6 text-center pb-4">
+      <SectionLabel>App</SectionLabel>
+      <div className="glass-card rounded-2xl divide-y divide-border mb-5">
+        <button
+          onClick={async () => {
+            if ('serviceWorker' in navigator) {
+              const reg = await navigator.serviceWorker.getRegistration();
+              if (reg) {
+                await reg.update();
+                if (reg.waiting) {
+                  reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                  window.location.reload();
+                } else {
+                  // Force reload to bust any stale cache
+                  window.location.reload();
+                }
+              } else {
+                window.location.reload();
+              }
+            } else {
+              window.location.reload();
+            }
+          }}
+          className="flex items-center justify-between px-4 py-3.5 min-h-[48px] w-full active:bg-bg-card-hover transition-colors"
+        >
+          <span className="text-sm font-medium">Check for Updates</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4A9EFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="23 4 23 10 17 10" />
+            <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10" />
+          </svg>
+        </button>
+        <button
+          onClick={() => {
+            if ('caches' in window) {
+              caches.keys().then(names => {
+                names.forEach(name => caches.delete(name));
+              });
+            }
+            window.location.reload();
+          }}
+          className="flex items-center justify-between px-4 py-3.5 min-h-[48px] w-full active:bg-bg-card-hover transition-colors"
+        >
+          <span className="text-sm font-medium">Force Refresh</span>
+          <span className="text-xs text-text-muted">Clear cache</span>
+        </button>
+      </div>
+
+      <div className="mt-4 text-center pb-4">
         <p className="text-text-muted text-xs">Lactation consultant: 954-844-9908</p>
-        <p className="text-text-muted text-xs mt-1 opacity-60">BabyLog v1.1</p>
+        <p className="text-text-muted text-xs mt-1 opacity-60">BabyLog v1.2</p>
       </div>
 
       {/* Edit/Add Modal */}
