@@ -71,13 +71,15 @@ export default function TrendsScreen() {
     plugins: { legend: { display: false } },
     scales: {
       x: {
-        ticks: { color: '#8891A0', font: { size: 10 }, maxRotation: 0 },
+        ticks: { color: '#556070', font: { size: 10 }, maxRotation: 0 },
         grid: { display: false },
+        border: { display: false },
       },
       y: {
         beginAtZero: true,
-        ticks: { color: '#5A6270', font: { size: 10 }, stepSize: 1 },
-        grid: { color: '#232A3340' },
+        ticks: { color: '#556070', font: { size: 10 }, stepSize: 1 },
+        grid: { color: '#262E3A' },
+        border: { display: false },
       },
     },
   } as const;
@@ -89,13 +91,13 @@ export default function TrendsScreen() {
   return (
     <div className="flex-1 scrollable px-4 pt-4 pb-4">
       {/* Range selector */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-5 bg-bg-card rounded-xl p-1">
         {([7, 14, 30] as Range[]).map(r => (
           <button
             key={r}
             onClick={() => setRange(r)}
-            className={`flex-1 py-2 rounded-xl text-sm font-medium ${
-              range === r ? 'bg-accent-blue text-white' : 'bg-bg-card text-text-secondary'
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+              range === r ? 'bg-accent-blue text-white shadow-sm' : 'text-text-secondary'
             }`}
           >
             {r}d
@@ -110,8 +112,9 @@ export default function TrendsScreen() {
             labels,
             datasets: [{
               data: feedsPerDay,
-              backgroundColor: feedsPerDay.map(v => v >= 8 ? '#2EA04380' : '#388BFD80'),
-              borderRadius: 4,
+              backgroundColor: feedsPerDay.map(v => v >= 8 ? '#34D05880' : '#4A9EFF60'),
+              borderRadius: 6,
+              borderSkipped: false,
             }],
           }}
           options={chartOpts}
@@ -125,8 +128,9 @@ export default function TrendsScreen() {
             labels,
             datasets: [{
               data: unit === 'oz' ? volumePerDay : volumePerDay.map(v => +(v * 29.5735).toFixed(0)),
-              backgroundColor: '#D2992280',
-              borderRadius: 4,
+              backgroundColor: '#F0B42960',
+              borderRadius: 6,
+              borderSkipped: false,
             }],
           }}
           options={chartOpts}
@@ -140,8 +144,9 @@ export default function TrendsScreen() {
             labels,
             datasets: [{
               data: wetPerDay,
-              backgroundColor: '#2EA04380',
-              borderRadius: 4,
+              backgroundColor: '#34D05860',
+              borderRadius: 6,
+              borderSkipped: false,
             }],
           }}
           options={chartOpts}
@@ -155,8 +160,9 @@ export default function TrendsScreen() {
             labels,
             datasets: [{
               data: stoolPerDay,
-              backgroundColor: '#D2992280',
-              borderRadius: 4,
+              backgroundColor: '#F0B42960',
+              borderRadius: 6,
+              borderSkipped: false,
             }],
           }}
           options={chartOpts}
@@ -168,11 +174,11 @@ export default function TrendsScreen() {
 
 function ChartCard({ title, children, targetLine }: { title: string; children: React.ReactNode; targetLine?: number }) {
   return (
-    <div className="bg-bg-card rounded-2xl p-4 mb-4">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium">{title}</h3>
+    <div className="glass-card rounded-2xl p-4 mb-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xs font-medium uppercase tracking-wider text-text-secondary">{title}</h3>
         {targetLine && (
-          <span className="text-xs text-accent-green">Target: {targetLine}</span>
+          <span className="text-xs text-accent-green font-medium">Target: {targetLine}</span>
         )}
       </div>
       <div className="h-[160px]">

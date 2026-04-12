@@ -88,18 +88,21 @@ export default function GuidanceBanner({ dob, feedCount: _feedCount, wetCount }:
       {visible.map(g => (
         <div
           key={g.key}
-          className={`rounded-xl p-3 pr-8 relative text-sm ${
+          className={`rounded-xl p-3.5 pr-9 relative text-sm font-medium ${
             g.type === 'warning'
-              ? 'bg-accent-amber/15 text-accent-amber border border-accent-amber/20'
-              : 'bg-accent-blue/10 text-accent-blue border border-accent-blue/15'
+              ? 'bg-accent-amber/8 text-accent-amber border border-accent-amber/15'
+              : 'bg-accent-blue/8 text-accent-blue border border-accent-blue/12'
           }`}
         >
           {g.message}
           <button
             onClick={() => dismiss(g.key)}
-            className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-xs opacity-60"
+            className="absolute top-2.5 right-2.5 w-6 h-6 flex items-center justify-center rounded-full opacity-50 hover:opacity-80 transition-opacity"
           >
-            &times;
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
           </button>
         </div>
       ))}

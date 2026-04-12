@@ -97,15 +97,29 @@ export default function HomeScreen() {
   const timeSinceLastFeed = lastFeed ? now - lastFeed.timestamp : null;
   const reminderMs = activeBaby.reminderIntervalMinutes * 60 * 1000;
 
-  const feedColor = timeSinceLastFeed === null
-    ? 'text-text-secondary'
+  const feedStatus = timeSinceLastFeed === null
+    ? 'neutral'
     : timeSinceLastFeed < 2 * 3600000
-      ? 'text-accent-green'
+      ? 'green'
       : timeSinceLastFeed < reminderMs
-        ? 'text-accent-amber'
-        : 'text-accent-red';
+        ? 'amber'
+        : 'red';
 
-  const isOverdue = timeSinceLastFeed !== null && timeSinceLastFeed >= reminderMs;
+  const feedColor = {
+    neutral: 'text-text-secondary',
+    green: 'text-accent-green',
+    amber: 'text-accent-amber',
+    red: 'text-accent-red',
+  }[feedStatus];
+
+  const heroClass = {
+    neutral: 'hero-neutral',
+    green: 'hero-green',
+    amber: 'hero-amber',
+    red: 'hero-red',
+  }[feedStatus];
+
+  const isOverdue = feedStatus === 'red';
 
   const totalFeeds = feeds.length;
   const totalBottleOz = feeds
@@ -136,62 +150,93 @@ export default function HomeScreen() {
         <GuidanceBanner dob={activeBaby.dob} feedCount={totalFeeds} wetCount={wetDiapers} />
 
         {/* Time since last feed — HERO */}
-        <div className={`bg-bg-card rounded-2xl p-5 mb-4 text-center ${isOverdue ? 'animate-subtle-pulse' : ''}`}>
-          <p className="text-text-secondary text-sm mb-1">Time since last feed</p>
-          <p className={`text-4xl font-bold tabular-nums ${feedColor}`}>
+        <div className={`rounded-2xl p-5 mb-4 text-center ${heroClass} ${isOverdue ? 'animate-glow-pulse' : ''}`}>
+          <p className="text-text-secondary text-xs font-medium uppercase tracking-wider mb-1.5">Time since last feed</p>
+          <p className={`text-[42px] font-bold tabular-nums leading-none ${feedColor}`}>
             {timeSinceLastFeed !== null ? formatTimeSince(timeSinceLastFeed) : '—'}
           </p>
           {lastBreastFeed?.lastSide && (
-            <p className="text-text-secondary text-sm mt-1">
+            <p className="text-text-secondary text-sm mt-2">
               Last side: <span className="text-text-primary font-medium capitalize">{lastBreastFeed.lastSide}</span>
             </p>
           )}
         </div>
 
         {/* Summary cards */}
-        <div className="flex gap-2 mb-4 overflow-x-auto scrollable">
-          <SummaryCard label="Feeds" value={totalFeeds} target={8} />
+        <div className="flex gap-2 mb-4 overflow-x-auto scrollable pb-1">
+          <SummaryCard label="Feeds" value={totalFeeds} target={8} accent="green" />
           <SummaryCard label={activeBaby.unitPreference === 'oz' ? 'Bottle oz' : 'Bottle mL'} value={
             activeBaby.unitPreference === 'oz'
               ? +totalBottleOz.toFixed(1)
               : +(totalBottleOz * 29.5735).toFixed(0)
-          } />
-          <SummaryCard label="Wet" value={wetDiapers} />
-          <SummaryCard label="Stools" value={stoolCount} />
-          <SummaryCard label="Pumps" value={pumpSessions} />
+          } accent="blue" />
+          <SummaryCard label="Wet" value={wetDiapers} accent="green" />
+          <SummaryCard label="Stools" value={stoolCount} accent="amber" />
+          <SummaryCard label="Pumps" value={pumpSessions} accent="purple" />
         </div>
 
         {/* L/R Balance */}
         {breastFeeds.length > 0 && (
-          <div className="bg-bg-card rounded-2xl p-4 mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <p className="text-2xl font-bold">L:{leftCount}</p>
-              <span className="text-text-muted">/</span>
-              <p className="text-2xl font-bold">R:{rightCount}</p>
+          <div className="glass-card rounded-2xl p-4 mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-5">
+              <div className="text-center">
+                <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-0.5">Left</p>
+                <p className="text-2xl font-bold tabular-nums">{leftCount}</p>
+              </div>
+              <div className="w-px h-8 bg-border" />
+              <div className="text-center">
+                <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-0.5">Right</p>
+                <p className="text-2xl font-bold tabular-nums">{rightCount}</p>
+              </div>
             </div>
-            <p className="text-sm text-text-secondary">
-              Next: <span className="text-text-primary font-medium">
+            <div className="text-right">
+              <p className="text-xs text-text-muted mb-0.5">Next side</p>
+              <p className="text-base font-semibold text-accent-blue">
                 {lastBreastFeed?.lastSide === 'left' ? 'Right' : 'Left'}
-              </span>
-            </p>
+              </p>
+            </div>
           </div>
         )}
 
         {/* Quick-add buttons */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
-          <QuickButton label="Feed" icon="🍼" color="bg-accent-blue/20 text-accent-blue" onClick={() => setFeedOpen(true)} />
-          <QuickButton label="Wet" icon="💧" color="bg-accent-green/20 text-accent-green" onClick={() => { setDiaperInitialType('wet'); setDiaperOpen(true); }} />
-          <QuickButton label="Stool" icon="💩" color="bg-accent-amber/20 text-accent-amber" onClick={() => { setDiaperInitialType('stool'); setDiaperOpen(true); }} />
-          <QuickButton label="Pump" icon="🥛" color="bg-[#A371F7]/20 text-[#A371F7]" onClick={() => setPumpOpen(true)} />
+        <div className="grid grid-cols-4 gap-2.5 mb-5">
+          <QuickButton
+            label="Feed"
+            icon={<FeedIcon />}
+            bgClass="bg-accent-blue/10 hover:bg-accent-blue/15"
+            textClass="text-accent-blue"
+            onClick={() => setFeedOpen(true)}
+          />
+          <QuickButton
+            label="Wet"
+            icon={<WetIcon />}
+            bgClass="bg-accent-green/10 hover:bg-accent-green/15"
+            textClass="text-accent-green"
+            onClick={() => { setDiaperInitialType('wet'); setDiaperOpen(true); }}
+          />
+          <QuickButton
+            label="Stool"
+            icon={<StoolIcon />}
+            bgClass="bg-accent-amber/10 hover:bg-accent-amber/15"
+            textClass="text-accent-amber"
+            onClick={() => { setDiaperInitialType('stool'); setDiaperOpen(true); }}
+          />
+          <QuickButton
+            label="Pump"
+            icon={<PumpIcon />}
+            bgClass="bg-accent-purple/10 hover:bg-accent-purple/15"
+            textClass="text-accent-purple"
+            onClick={() => setPumpOpen(true)}
+          />
         </div>
 
         {/* Today's log */}
         <div>
-          <h3 className="text-sm text-text-secondary font-medium mb-2">Today's Log</h3>
+          <h3 className="text-xs text-text-muted font-medium uppercase tracking-wider mb-2.5">Today's Log</h3>
           {timeline.length === 0 ? (
-            <p className="text-text-muted text-center py-8">No entries yet today</p>
+            <p className="text-text-muted text-center py-8 text-sm">No entries yet today</p>
           ) : (
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               {timeline.map(item => (
                 <TimelineRow key={item.id} item={item} onDelete={() => handleDelete(item)} />
               ))}
@@ -208,39 +253,102 @@ export default function HomeScreen() {
   );
 }
 
-function SummaryCard({ label, value, target }: { label: string; value: number; target?: number }) {
+function SummaryCard({ label, value, target, accent }: { label: string; value: number; target?: number; accent: string }) {
   const atTarget = target !== undefined && value >= target;
+  const accentColors: Record<string, string> = {
+    green: 'border-accent-green/20',
+    blue: 'border-accent-blue/20',
+    amber: 'border-accent-amber/20',
+    purple: 'border-[#B180F7]/20',
+  };
   return (
-    <div className="bg-bg-card rounded-xl p-3 min-w-[72px] flex-shrink-0 text-center">
-      <p className={`text-xl font-bold tabular-nums ${atTarget ? 'text-accent-green' : ''}`}>
+    <div className={`glass-card rounded-xl p-3 min-w-[76px] flex-shrink-0 text-center border ${accentColors[accent] ?? 'border-border'}`}>
+      <p className={`text-xl font-bold tabular-nums ${atTarget ? 'text-accent-green' : 'text-text-primary'}`}>
         {value}
         {target !== undefined && (
-          <span className={`text-xs font-normal ${atTarget ? 'text-accent-green/70' : 'text-text-muted'}`}>/{target}</span>
+          <span className={`text-xs font-normal ${atTarget ? 'text-accent-green/60' : 'text-text-muted'}`}>/{target}</span>
         )}
       </p>
-      <p className="text-xs text-text-muted mt-0.5">{label}</p>
+      <p className="text-[10px] text-text-muted mt-0.5 font-medium uppercase tracking-wider">{label}</p>
     </div>
   );
 }
 
-function QuickButton({ label, icon, color, onClick }: { label: string; icon: string; color: string; onClick: () => void }) {
+function QuickButton({ label, icon, bgClass, textClass, onClick }: {
+  label: string;
+  icon: React.ReactNode;
+  bgClass: string;
+  textClass: string;
+  onClick: () => void;
+}) {
   return (
-    <button onClick={onClick} className={`flex flex-col items-center justify-center rounded-2xl py-4 min-h-[80px] active:opacity-70 ${color}`}>
-      <span className="text-2xl mb-1">{icon}</span>
-      <span className="text-xs font-medium">{label}</span>
+    <button
+      onClick={onClick}
+      className={`flex flex-col items-center justify-center rounded-2xl py-4 min-h-[80px] transition-all active:scale-95 ${bgClass} ${textClass}`}
+    >
+      <div className="mb-1.5">{icon}</div>
+      <span className="text-xs font-semibold">{label}</span>
     </button>
+  );
+}
+
+// SVG icons for quick-add buttons (replacing emojis for premium feel)
+function FeedIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2v6a6 6 0 0012 0V2" />
+      <path d="M12 8v13" />
+      <path d="M8 21h8" />
+    </svg>
+  );
+}
+
+function WetIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
+    </svg>
+  );
+}
+
+function StoolIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" y1="9" x2="9.01" y2="9" />
+      <line x1="15" y1="9" x2="15.01" y2="9" />
+    </svg>
+  );
+}
+
+function PumpIcon() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M8 2h8" />
+      <path d="M9 2v3.5a5 5 0 005 0V2" />
+      <rect x="7" y="10" width="10" height="12" rx="2" />
+      <line x1="12" y1="14" x2="12" y2="18" />
+    </svg>
   );
 }
 
 function TimelineRow({ item, onDelete }: { item: TimelineEntry; onDelete: () => void }) {
   const [showDelete, setShowDelete] = useState(false);
 
-  let icon = '';
+  let icon: React.ReactNode;
   let detail = '';
+  let accentColor = '';
 
   if (item.entryType === 'feed') {
     const f = item.entry as FeedEntry;
-    icon = f.type === 'breast' ? '🤱' : '🍼';
+    accentColor = 'text-accent-blue';
+    icon = (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 2v6a6 6 0 0012 0V2" />
+        <path d="M12 8v13" />
+      </svg>
+    );
     if (f.type === 'breast') {
       const parts: string[] = [];
       if (f.leftDurationSec) parts.push(`L:${Math.round(f.leftDurationSec / 60)}m`);
@@ -251,37 +359,53 @@ function TimelineRow({ item, onDelete }: { item: TimelineEntry; onDelete: () => 
     }
   } else if (item.entryType === 'diaper') {
     const d = item.entry as DiaperEntry;
-    icon = d.type === 'wet' ? '💧' : d.type === 'stool' ? '💩' : '💧💩';
+    accentColor = d.type === 'wet' ? 'text-accent-green' : 'text-accent-amber';
+    icon = d.type === 'wet' || d.type === 'both' ? (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0z" />
+      </svg>
+    ) : (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      </svg>
+    );
     detail = d.type.charAt(0).toUpperCase() + d.type.slice(1);
     if (d.stoolColor) detail += ` (${d.stoolColor})`;
   } else {
     const p = item.entry as PumpEntry;
-    icon = '🥛';
+    accentColor = 'text-accent-purple';
+    icon = (
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="7" y="10" width="10" height="12" rx="2" />
+        <line x1="12" y1="14" x2="12" y2="18" />
+      </svg>
+    );
     detail = p.amount ? `${p.amount} ${p.unit}` : 'Pump';
     if (p.side !== 'both') detail += ` (${p.side})`;
   }
 
   return (
-    <div className="relative">
+    <div>
       <div
         onClick={() => setShowDelete(!showDelete)}
-        className="flex items-center bg-bg-card rounded-xl px-3 py-3 gap-3 cursor-pointer"
+        className="flex items-center glass-card rounded-xl px-3.5 py-3 gap-3 cursor-pointer transition-colors active:bg-bg-card-hover"
       >
-        <span className="text-lg">{icon}</span>
-        <span className="flex-1 text-sm">{detail}</span>
-        <span className="text-xs text-text-muted">{formatRelativeTime(item.timestamp)}</span>
+        <span className={`${accentColor} flex-shrink-0`}>{icon}</span>
+        <span className="flex-1 text-sm font-medium">{detail}</span>
+        <span className="text-xs text-text-muted tabular-nums">{formatRelativeTime(item.timestamp)}</span>
       </div>
       {showDelete && (
-        <div className="flex justify-end gap-2 mt-1 mb-1">
+        <div className="flex justify-end gap-2 mt-1.5 mb-1 animate-scale-in">
           <button
             onClick={() => setShowDelete(false)}
-            className="px-3 py-1.5 text-xs rounded-lg bg-bg-card text-text-secondary"
+            className="px-4 py-2 text-xs rounded-xl bg-bg-card text-text-secondary font-medium"
           >
             Cancel
           </button>
           <button
             onClick={onDelete}
-            className="px-3 py-1.5 text-xs rounded-lg bg-accent-red/20 text-accent-red"
+            className="px-4 py-2 text-xs rounded-xl bg-accent-red/15 text-accent-red font-medium"
           >
             Delete
           </button>

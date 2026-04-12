@@ -8,14 +8,14 @@ import type { BabyProfile } from '../types';
 import Modal from './Modal';
 
 const PRESET_COLORS = [
-  '#388BFD', '#2EA043', '#D29922', '#DA3633',
-  '#A371F7', '#F778BA', '#56D4DD', '#E09B54',
+  '#4A9EFF', '#34D058', '#F0B429', '#F85149',
+  '#B180F7', '#F778BA', '#56D4DD', '#E09B54',
 ];
 
 const REMINDER_OPTIONS = [
-  { label: 'Every 2 hours', value: 120 },
-  { label: 'Every 2.5 hours', value: 150 },
-  { label: 'Every 3 hours', value: 180 },
+  { label: '2h', value: 120 },
+  { label: '2.5h', value: 150 },
+  { label: '3h', value: 180 },
 ];
 
 export default function SettingsScreen() {
@@ -25,7 +25,8 @@ export default function SettingsScreen() {
   const [addingBaby, setAddingBaby] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [joinCode, setJoinCode] = useState('');
-  const [_showShareModal, setShowShareModal] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState('');
 
   // Edit fields
   const [editName, setEditName] = useState('');
@@ -96,18 +97,29 @@ export default function SettingsScreen() {
     setConfirmDelete(null);
   }
 
+  async function handleJoinRoom() {
+    if (joinCode.length !== 6) return;
+    setJoining(true);
+    setJoinError('');
+    const success = await joinRoom(joinCode);
+    if (!success) {
+      setJoinError('Room not found.');
+    }
+    setJoining(false);
+  }
+
   return (
     <div className="flex-1 scrollable px-4 pt-4 pb-4">
-      <h2 className="text-lg font-semibold mb-4">Settings</h2>
+      <h2 className="text-lg font-semibold mb-5">Settings</h2>
 
       {/* Baby profiles */}
-      <h3 className="text-sm text-text-secondary font-medium mb-2">Baby Profiles</h3>
-      <div className="flex flex-col gap-2 mb-4">
+      <SectionLabel>Baby Profiles</SectionLabel>
+      <div className="flex flex-col gap-2 mb-5">
         {state.babies.map(baby => (
           <div
             key={baby.id}
-            className={`bg-bg-card rounded-2xl p-4 flex items-center gap-3 ${
-              baby.id === state.activeBabyId ? 'ring-2 ring-accent-blue' : ''
+            className={`glass-card rounded-2xl p-4 flex items-center gap-3 transition-all ${
+              baby.id === state.activeBabyId ? 'ring-1 ring-accent-blue/40' : ''
             }`}
           >
             <button
@@ -116,18 +128,18 @@ export default function SettingsScreen() {
             >
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0"
-                style={{ backgroundColor: baby.themeColor + '33', color: baby.themeColor }}
+                style={{ backgroundColor: baby.themeColor + '20', color: baby.themeColor }}
               >
                 {baby.name.charAt(0).toUpperCase()}
               </div>
               <div className="text-left">
-                <p className="font-medium">{baby.name}</p>
-                <p className="text-xs text-text-secondary">Born {baby.dob}</p>
+                <p className="font-medium text-[15px]">{baby.name}</p>
+                <p className="text-xs text-text-muted">Born {baby.dob}</p>
               </div>
             </button>
             <button
               onClick={() => openEdit(baby)}
-              className="px-3 py-2 text-xs rounded-lg bg-bg-input text-text-secondary min-h-[36px]"
+              className="px-3 py-2 text-xs rounded-xl bg-bg-input text-text-secondary min-h-[36px] font-medium active:opacity-70"
             >
               Edit
             </button>
@@ -135,7 +147,7 @@ export default function SettingsScreen() {
         ))}
         <button
           onClick={openAdd}
-          className="w-full py-3 rounded-2xl border-2 border-dashed border-border text-text-secondary text-sm min-h-[48px]"
+          className="w-full py-3 rounded-2xl border border-dashed border-border-light text-text-muted text-sm min-h-[48px] font-medium active:opacity-70"
         >
           + Add Baby
         </button>
@@ -144,8 +156,8 @@ export default function SettingsScreen() {
       {/* Active baby settings */}
       {activeBaby && (
         <>
-          <h3 className="text-sm text-text-secondary font-medium mb-2">Preferences</h3>
-          <div className="bg-bg-card rounded-2xl divide-y divide-border mb-4">
+          <SectionLabel>Preferences</SectionLabel>
+          <div className="glass-card rounded-2xl divide-y divide-border mb-5">
             <SettingsRow label="Unit preference" value={activeBaby.unitPreference} />
             <SettingsRow
               label="Feed reminder"
@@ -153,80 +165,88 @@ export default function SettingsScreen() {
             />
           </div>
 
-          <h3 className="text-sm text-text-secondary font-medium mb-2">Sync</h3>
-          <div className="bg-bg-card rounded-2xl p-4 mb-4">
+          <SectionLabel>Sync</SectionLabel>
+          <div className="glass-card rounded-2xl p-4 mb-5">
             {sync.connected ? (
               <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 rounded-full bg-accent-green" />
-                  <span className="text-sm text-accent-green">Connected</span>
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-2 h-2 rounded-full bg-accent-green shadow-[0_0_8px_rgba(52,208,88,0.4)]" />
+                  <span className="text-sm text-accent-green font-medium">Connected</span>
                 </div>
-                <p className="text-sm text-text-secondary mb-1">Room code:</p>
-                <p className="text-2xl font-bold tracking-widest mb-3">{sync.roomCode}</p>
-                <p className="text-xs text-text-muted mb-3">Share this code with your partner so they can join.</p>
+                <p className="text-xs text-text-muted mb-1">Room code</p>
+                <p className="text-2xl font-bold tracking-[0.3em] mb-3 tabular-nums">{sync.roomCode}</p>
+                <p className="text-xs text-text-muted mb-4">Share this code with your partner so they can join and see all your data.</p>
                 <button
                   onClick={leaveRoom}
-                  className="w-full py-2.5 rounded-xl text-sm text-accent-red bg-accent-red/10"
+                  className="w-full py-2.5 rounded-xl text-sm text-accent-red bg-accent-red/10 font-medium active:opacity-70"
                 >
                   Disconnect
                 </button>
               </div>
             ) : (
               <div>
-                <p className="text-sm text-text-secondary mb-3">Sync data with your partner in real-time.</p>
+                <p className="text-sm text-text-secondary mb-4">Sync feeds, diapers, and pumps with your partner in real-time.</p>
                 <button
-                  onClick={async () => {
-                    await createRoom();
-                    setShowShareModal(true);
-                  }}
-                  className="w-full py-3 rounded-xl bg-accent-blue text-white font-medium text-sm mb-2"
+                  onClick={async () => { await createRoom(); }}
+                  className="w-full py-3 rounded-xl btn-primary text-white font-medium text-sm mb-3"
                 >
                   Create Room
                 </button>
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-text-muted">or join existing</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+                <div className="flex gap-2 mt-2">
                   <input
                     type="text"
+                    inputMode="numeric"
                     value={joinCode}
-                    onChange={e => setJoinCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    placeholder="Enter 6-digit code"
+                    onChange={e => { setJoinCode(e.target.value.replace(/\D/g, '').slice(0, 6)); setJoinError(''); }}
+                    placeholder="000000"
                     maxLength={6}
-                    className="flex-1 px-3 py-3 rounded-xl bg-bg-input text-text-primary text-sm outline-none text-center tracking-widest"
+                    className="flex-1 px-3 py-3 rounded-xl bg-bg-input text-text-primary text-sm outline-none text-center tracking-[0.3em] font-bold focus:ring-2 focus:ring-accent-blue"
                   />
                   <button
-                    onClick={() => { if (joinCode.length === 6) joinRoom(joinCode); }}
-                    disabled={joinCode.length !== 6}
-                    className="px-4 py-3 rounded-xl bg-accent-green text-white text-sm font-medium disabled:opacity-40"
+                    onClick={handleJoinRoom}
+                    disabled={joinCode.length !== 6 || joining}
+                    className="px-5 py-3 rounded-xl btn-success text-white text-sm font-medium disabled:opacity-40"
                   >
-                    Join
+                    {joining ? (
+                      <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : 'Join'}
                   </button>
                 </div>
+                {joinError && (
+                  <p className="text-xs text-accent-red mt-2">{joinError}</p>
+                )}
               </div>
             )}
           </div>
 
-          <h3 className="text-sm text-text-secondary font-medium mb-2">Data</h3>
-          <div className="bg-bg-card rounded-2xl divide-y divide-border mb-4">
+          <SectionLabel>Data</SectionLabel>
+          <div className="glass-card rounded-2xl divide-y divide-border mb-5">
             <button
               onClick={() => activeBaby && exportPDF(activeBaby)}
-              className="flex items-center justify-between px-4 py-3.5 min-h-[48px] w-full"
+              className="flex items-center justify-between px-4 py-3.5 min-h-[48px] w-full active:bg-bg-card-hover transition-colors"
             >
-              <span className="text-sm">Export PDF</span>
-              <span className="text-sm text-accent-blue">Download</span>
+              <span className="text-sm font-medium">Export PDF</span>
+              <span className="text-sm text-accent-blue font-medium">Download</span>
             </button>
             <button
               onClick={() => activeBaby && exportCSV(activeBaby)}
-              className="flex items-center justify-between px-4 py-3.5 min-h-[48px] w-full"
+              className="flex items-center justify-between px-4 py-3.5 min-h-[48px] w-full active:bg-bg-card-hover transition-colors"
             >
-              <span className="text-sm">Export CSV</span>
-              <span className="text-sm text-accent-blue">Download</span>
+              <span className="text-sm font-medium">Export CSV</span>
+              <span className="text-sm text-accent-blue font-medium">Download</span>
             </button>
           </div>
         </>
       )}
 
-      <div className="mt-4 text-center">
+      <div className="mt-6 text-center pb-4">
         <p className="text-text-muted text-xs">Lactation consultant: 954-844-9908</p>
-        <p className="text-text-muted text-xs mt-1">BabyLog v1.0</p>
+        <p className="text-text-muted text-xs mt-1 opacity-60">BabyLog v1.1</p>
       </div>
 
       {/* Edit/Add Modal */}
@@ -235,29 +255,29 @@ export default function SettingsScreen() {
         onClose={() => { setEditingBaby(null); setAddingBaby(false); }}
         title={editingBaby ? 'Edit Baby' : 'Add Baby'}
       >
-        <label className="text-text-secondary text-sm mb-1 block">Name</label>
+        <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">Name</label>
         <input
           type="text"
           value={editName}
           onChange={e => setEditName(e.target.value)}
-          className="w-full px-4 py-3 rounded-xl bg-bg-input text-text-primary text-base mb-3 outline-none focus:ring-2 focus:ring-accent-blue"
+          className="w-full px-4 py-3 rounded-xl bg-bg-input text-text-primary text-base mb-4 outline-none focus:ring-2 focus:ring-accent-blue"
         />
 
-        <label className="text-text-secondary text-sm mb-1 block">Date of birth</label>
+        <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">Date of birth</label>
         <input
           type="date"
           value={editDob}
           onChange={e => setEditDob(e.target.value)}
-          className="w-full px-4 py-3 rounded-xl bg-bg-input text-text-primary text-base mb-3 outline-none focus:ring-2 focus:ring-accent-blue"
+          className="w-full px-4 py-3 rounded-xl bg-bg-input text-text-primary text-base mb-4 outline-none focus:ring-2 focus:ring-accent-blue"
         />
 
-        <label className="text-text-secondary text-sm mb-1 block">Gender</label>
-        <div className="flex gap-2 mb-3">
+        <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">Gender</label>
+        <div className="flex gap-2 mb-4">
           {(['male', 'female', 'other'] as const).map(g => (
             <button
               key={g}
               onClick={() => setEditGender(g)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-medium capitalize ${
+              className={`flex-1 py-2.5 rounded-xl text-sm font-medium capitalize transition-colors ${
                 editGender === g ? 'bg-accent-blue text-white' : 'bg-bg-card text-text-secondary'
               }`}
             >
@@ -266,28 +286,30 @@ export default function SettingsScreen() {
           ))}
         </div>
 
-        <label className="text-text-secondary text-sm mb-1 block">Theme color</label>
-        <div className="flex gap-2 mb-3 flex-wrap">
+        <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">Theme color</label>
+        <div className="flex gap-2.5 mb-4 flex-wrap">
           {PRESET_COLORS.map(c => (
             <button
               key={c}
               onClick={() => setEditColor(c)}
-              className="w-8 h-8 rounded-full border-2"
+              className="w-9 h-9 rounded-full border-2 transition-all"
               style={{
                 backgroundColor: c,
-                borderColor: editColor === c ? '#E1E4E8' : 'transparent',
+                borderColor: editColor === c ? '#E8ECF1' : 'transparent',
+                transform: editColor === c ? 'scale(1.1)' : 'scale(1)',
+                boxShadow: editColor === c ? `0 0 12px ${c}40` : 'none',
               }}
             />
           ))}
         </div>
 
-        <label className="text-text-secondary text-sm mb-1 block">Unit preference</label>
-        <div className="flex gap-2 mb-3">
+        <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">Unit preference</label>
+        <div className="flex gap-2 mb-4">
           {(['oz', 'mL'] as const).map(u => (
             <button
               key={u}
               onClick={() => setEditUnit(u)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-medium ${
+              className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 editUnit === u ? 'bg-accent-blue text-white' : 'bg-bg-card text-text-secondary'
               }`}
             >
@@ -296,13 +318,13 @@ export default function SettingsScreen() {
           ))}
         </div>
 
-        <label className="text-text-secondary text-sm mb-1 block">Feed reminder</label>
-        <div className="flex gap-2 mb-4">
+        <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">Feed reminder</label>
+        <div className="flex gap-2 mb-5">
           {REMINDER_OPTIONS.map(opt => (
             <button
               key={opt.value}
               onClick={() => setEditReminder(opt.value)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-medium ${
+              className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 editReminder === opt.value ? 'bg-accent-blue text-white' : 'bg-bg-card text-text-secondary'
               }`}
             >
@@ -313,7 +335,7 @@ export default function SettingsScreen() {
 
         <button
           onClick={editingBaby ? handleSaveEdit : handleAddBaby}
-          className="w-full py-4 rounded-2xl bg-accent-green text-white font-semibold text-lg mb-2 active:opacity-80"
+          className="w-full py-4 rounded-2xl btn-success text-white font-semibold text-lg mb-2"
         >
           {editingBaby ? 'Save Changes' : 'Add Baby'}
         </button>
@@ -323,7 +345,7 @@ export default function SettingsScreen() {
             <div className="flex gap-2">
               <button
                 onClick={() => setConfirmDelete(null)}
-                className="flex-1 py-3 rounded-xl bg-bg-card text-text-secondary text-sm"
+                className="flex-1 py-3 rounded-xl bg-bg-card text-text-secondary text-sm font-medium"
               >
                 Cancel
               </button>
@@ -337,7 +359,7 @@ export default function SettingsScreen() {
           ) : (
             <button
               onClick={() => setConfirmDelete(editingBaby.id)}
-              className="w-full py-3 rounded-xl text-accent-red text-sm"
+              className="w-full py-3 rounded-xl text-accent-red text-sm font-medium"
             >
               Delete {editingBaby.name}
             </button>
@@ -348,10 +370,14 @@ export default function SettingsScreen() {
   );
 }
 
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <h3 className="text-xs text-text-muted font-medium uppercase tracking-wider mb-2.5">{children}</h3>;
+}
+
 function SettingsRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between px-4 py-3.5 min-h-[48px]">
-      <span className="text-sm">{label}</span>
+      <span className="text-sm font-medium">{label}</span>
       <span className="text-sm text-text-secondary">{value}</span>
     </div>
   );

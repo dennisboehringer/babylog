@@ -1,4 +1,4 @@
-import { rtdb, ref, onValue, set, remove } from './firebase';
+import { rtdb, ref, onValue, set, remove, get } from './firebase';
 import { db } from './db';
 import type { FeedEntry, DiaperEntry, PumpEntry, BabyProfile } from './types';
 
@@ -50,6 +50,68 @@ export async function pushAllData(roomCode: string) {
   await set(roomRef, data);
 }
 
+// Fetch all data from a room and merge into local IndexedDB
+// Returns true if the room exists and has data
+export async function fetchRoomData(roomCode: string): Promise<boolean> {
+  const roomRef = ref(rtdb, `rooms/${roomCode}`);
+  const snapshot = await get(roomRef);
+  const data = snapshot.val();
+  if (!data) return false;
+
+  await mergeRemoteData(data);
+  return true;
+}
+
+// Merge remote data into local IndexedDB
+async function mergeRemoteData(data: any) {
+  // Sync babies
+  if (data.babies) {
+    const remoteBabies: BabyProfile[] = Object.values(data.babies);
+    for (const baby of remoteBabies) {
+      const existing = await db.babies.get(baby.id);
+      if (!existing) {
+        await db.babies.put(baby);
+      } else if (existing.createdAt < baby.createdAt) {
+        // Remote is newer — update local
+        await db.babies.put(baby);
+      }
+    }
+  }
+
+  // Sync feeds
+  if (data.feeds) {
+    const remoteFeeds: FeedEntry[] = Object.values(data.feeds);
+    for (const feed of remoteFeeds) {
+      const existing = await db.feeds.get(feed.id);
+      if (!existing) {
+        await db.feeds.put(feed);
+      }
+    }
+  }
+
+  // Sync diapers
+  if (data.diapers) {
+    const remoteDiapers: DiaperEntry[] = Object.values(data.diapers);
+    for (const diaper of remoteDiapers) {
+      const existing = await db.diapers.get(diaper.id);
+      if (!existing) {
+        await db.diapers.put(diaper);
+      }
+    }
+  }
+
+  // Sync pumps
+  if (data.pumps) {
+    const remotePumps: PumpEntry[] = Object.values(data.pumps);
+    for (const pump of remotePumps) {
+      const existing = await db.pumps.get(pump.id);
+      if (!existing) {
+        await db.pumps.put(pump);
+      }
+    }
+  }
+}
+
 // Push a single entry to Firebase
 export async function pushEntry(
   roomCode: string,
@@ -85,50 +147,7 @@ export function listenForChanges(
     const data = snapshot.val();
     if (!data) return;
 
-    // Sync babies
-    if (data.babies) {
-      const remoteBabies: BabyProfile[] = Object.values(data.babies);
-      for (const baby of remoteBabies) {
-        const existing = await db.babies.get(baby.id);
-        if (!existing || existing.createdAt < baby.createdAt) {
-          await db.babies.put(baby);
-        }
-      }
-    }
-
-    // Sync feeds
-    if (data.feeds) {
-      const remoteFeeds: FeedEntry[] = Object.values(data.feeds);
-      for (const feed of remoteFeeds) {
-        const existing = await db.feeds.get(feed.id);
-        if (!existing) {
-          await db.feeds.put(feed);
-        }
-      }
-    }
-
-    // Sync diapers
-    if (data.diapers) {
-      const remoteDiapers: DiaperEntry[] = Object.values(data.diapers);
-      for (const diaper of remoteDiapers) {
-        const existing = await db.diapers.get(diaper.id);
-        if (!existing) {
-          await db.diapers.put(diaper);
-        }
-      }
-    }
-
-    // Sync pumps
-    if (data.pumps) {
-      const remotePumps: PumpEntry[] = Object.values(data.pumps);
-      for (const pump of remotePumps) {
-        const existing = await db.pumps.get(pump.id);
-        if (!existing) {
-          await db.pumps.put(pump);
-        }
-      }
-    }
-
+    await mergeRemoteData(data);
     onUpdate();
   });
 

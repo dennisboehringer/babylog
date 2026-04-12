@@ -15,9 +15,9 @@ interface Props {
 
 interface TimerState {
   activeSide: 'left' | 'right' | null;
-  leftAccumulated: number; // ms accumulated before current run
+  leftAccumulated: number;
   rightAccumulated: number;
-  startedAt: number | null; // when current side started (timestamp)
+  startedAt: number | null;
   feedStartTimestamp: number;
 }
 
@@ -58,7 +58,6 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
   const [timestamp, setTimestamp] = useState(Date.now());
   const tickRef = useRef<number>(undefined);
 
-  // Tick every second while timer is active
   useEffect(() => {
     if (timer.activeSide) {
       tickRef.current = window.setInterval(() => setNow(Date.now()), 1000);
@@ -68,7 +67,6 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
     return () => { if (tickRef.current) clearInterval(tickRef.current); };
   }, [timer.activeSide]);
 
-  // Persist timer state
   useEffect(() => {
     saveTimer(timer);
   }, [timer]);
@@ -95,7 +93,6 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
   function tapSide(side: 'left' | 'right') {
     setTimer(prev => {
       const nowTs = Date.now();
-      // If tapping the already active side, pause it
       if (prev.activeSide === side) {
         const elapsed = prev.startedAt ? nowTs - prev.startedAt : 0;
         return {
@@ -106,9 +103,7 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
             (side === 'left' ? prev.leftAccumulated : prev.rightAccumulated) + elapsed,
         };
       }
-      // Switch or start
       const updated = { ...prev, activeSide: side, startedAt: nowTs } as TimerState;
-      // Pause the other side if active
       if (prev.activeSide && prev.startedAt) {
         const otherSide = prev.activeSide;
         const elapsed = nowTs - prev.startedAt;
@@ -122,7 +117,6 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
   async function handleDone() {
     if (!activeBaby) return;
 
-    // Finalize any running timer
     let finalLeft = timer.leftAccumulated;
     let finalRight = timer.rightAccumulated;
     if (timer.activeSide && timer.startedAt) {
@@ -131,7 +125,6 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
       else finalRight += elapsed;
     }
 
-    // Determine last side
     let lastSide: 'left' | 'right' | null = null;
     if (timer.activeSide) {
       lastSide = timer.activeSide;
@@ -191,24 +184,24 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
   const hasAnyTime = totalMs > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black max-w-[420px] mx-auto">
+    <div className="fixed inset-0 z-50 flex flex-col bg-bg-primary max-w-[420px] mx-auto animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3">
-        <button onClick={onClose} className="text-text-secondary text-sm min-h-[48px] px-2">
+        <button onClick={onClose} className="text-text-secondary text-sm min-h-[48px] px-2 font-medium">
           Back
         </button>
-        <span className="text-lg font-semibold">Breast Feed</span>
+        <span className="text-[17px] font-semibold">Breast Feed</span>
         <button
           onClick={handleReset}
-          className="text-accent-red text-sm min-h-[48px] px-2"
+          className="text-accent-red text-sm min-h-[48px] px-2 font-medium"
         >
           Reset
         </button>
       </div>
 
       {/* Total time */}
-      <div className="text-center py-2">
-        <p className="text-text-secondary text-sm">Total</p>
+      <div className="text-center py-3">
+        <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-1">Total</p>
         <p className="text-3xl font-bold tabular-nums">{formatMs(totalMs)}</p>
       </div>
 
@@ -216,31 +209,31 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
       <div className="flex gap-4 px-4 py-4 flex-1 max-h-[300px]">
         <button
           onClick={() => tapSide('left')}
-          className={`flex-1 rounded-3xl flex flex-col items-center justify-center min-h-[120px] transition-colors ${
+          className={`flex-1 rounded-3xl flex flex-col items-center justify-center min-h-[120px] transition-all ${
             timer.activeSide === 'left'
-              ? 'bg-accent-blue text-white'
-              : 'bg-bg-card text-text-primary'
+              ? 'bg-gradient-to-b from-accent-blue to-[#3070E0] text-white shadow-[0_4px_24px_rgba(74,158,255,0.3)]'
+              : 'glass-card text-text-primary active:scale-[0.98]'
           }`}
         >
-          <span className="text-lg font-medium mb-2">LEFT</span>
+          <span className="text-lg font-semibold mb-2">LEFT</span>
           <span className="text-4xl font-bold tabular-nums">{formatMs(leftMs)}</span>
           {timer.activeSide === 'left' && (
-            <span className="text-sm mt-2 opacity-80">Tap to pause</span>
+            <span className="text-sm mt-2 opacity-70">Tap to pause</span>
           )}
         </button>
 
         <button
           onClick={() => tapSide('right')}
-          className={`flex-1 rounded-3xl flex flex-col items-center justify-center min-h-[120px] transition-colors ${
+          className={`flex-1 rounded-3xl flex flex-col items-center justify-center min-h-[120px] transition-all ${
             timer.activeSide === 'right'
-              ? 'bg-accent-blue text-white'
-              : 'bg-bg-card text-text-primary'
+              ? 'bg-gradient-to-b from-accent-blue to-[#3070E0] text-white shadow-[0_4px_24px_rgba(74,158,255,0.3)]'
+              : 'glass-card text-text-primary active:scale-[0.98]'
           }`}
         >
-          <span className="text-lg font-medium mb-2">RIGHT</span>
+          <span className="text-lg font-semibold mb-2">RIGHT</span>
           <span className="text-4xl font-bold tabular-nums">{formatMs(rightMs)}</span>
           {timer.activeSide === 'right' && (
-            <span className="text-sm mt-2 opacity-80">Tap to pause</span>
+            <span className="text-sm mt-2 opacity-70">Tap to pause</span>
           )}
         </button>
       </div>
@@ -250,7 +243,7 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
         {!showExtras ? (
           <button
             onClick={() => setShowExtras(true)}
-            className="w-full py-3 text-sm text-text-secondary"
+            className="w-full py-3 text-sm text-text-muted font-medium"
           >
             + Add weight, time, or notes
           </button>
@@ -258,25 +251,25 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
           <>
             <div className="flex gap-3 mb-4">
               <div className="flex-1">
-                <label className="text-text-secondary text-sm mb-1 block">Left oz</label>
+                <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">Left oz</label>
                 <input
                   type="number"
                   step="0.1"
                   value={leftOz}
                   onChange={e => setLeftOz(e.target.value)}
                   placeholder="0"
-                  className="w-full px-3 py-2.5 rounded-xl bg-bg-input text-text-primary outline-none"
+                  className="w-full px-3 py-2.5 rounded-xl bg-bg-input text-text-primary outline-none focus:ring-2 focus:ring-accent-blue"
                 />
               </div>
               <div className="flex-1">
-                <label className="text-text-secondary text-sm mb-1 block">Right oz</label>
+                <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">Right oz</label>
                 <input
                   type="number"
                   step="0.1"
                   value={rightOz}
                   onChange={e => setRightOz(e.target.value)}
                   placeholder="0"
-                  className="w-full px-3 py-2.5 rounded-xl bg-bg-input text-text-primary outline-none"
+                  className="w-full px-3 py-2.5 rounded-xl bg-bg-input text-text-primary outline-none focus:ring-2 focus:ring-accent-blue"
                 />
               </div>
             </div>
@@ -291,7 +284,7 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
         <button
           onClick={handleDone}
           disabled={!hasAnyTime && !isRunning}
-          className="w-full py-4 rounded-2xl bg-accent-green text-white font-semibold text-lg disabled:opacity-40 active:opacity-80"
+          className="w-full py-4 rounded-2xl btn-success text-white font-semibold text-lg"
         >
           Done
         </button>

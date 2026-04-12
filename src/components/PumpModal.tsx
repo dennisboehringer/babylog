@@ -123,7 +123,7 @@ export default function PumpModal({ open, onClose, onSaved }: Props) {
 
       <button
         onClick={handleSave}
-        className="w-full py-4 rounded-2xl bg-accent-green text-white font-semibold text-lg active:opacity-80"
+        className="w-full py-4 rounded-2xl btn-success text-white font-semibold text-lg"
       >
         Save
       </button>

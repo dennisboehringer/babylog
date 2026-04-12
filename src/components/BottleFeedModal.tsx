@@ -111,7 +111,7 @@ export default function BottleFeedModal({ open, onClose, onSaved }: Props) {
       <button
         onClick={handleSave}
         disabled={effectiveAmount === null || isNaN(effectiveAmount)}
-        className="w-full py-4 rounded-2xl bg-accent-green text-white font-semibold text-lg disabled:opacity-40 active:opacity-80"
+        className="w-full py-4 rounded-2xl btn-success text-white font-semibold text-lg"
       >
         Save
       </button>
