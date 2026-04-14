@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deploy:dev": "bash scripts/deploy-dev.sh",
+    "deploy:prod": "vercel --prod --yes"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",
