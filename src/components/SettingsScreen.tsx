@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { useApp } from '../context/AppContext';
 import { useSync } from '../context/SyncContext';
 import { db } from '../db';
+import { getEnvironment } from '../sync';
 import { exportPDF, exportCSV } from '../export';
 import type { BabyProfile } from '../types';
 import Modal from './Modal';
@@ -292,7 +293,12 @@ export default function SettingsScreen() {
 
       <div className="mt-4 text-center pb-4">
         <p className="text-text-muted text-xs">Lactation consultant: 954-844-9908</p>
-        <p className="text-text-muted text-xs mt-1 opacity-60">BabyLog v1.2</p>
+        <p className="text-text-muted text-xs mt-1 opacity-60">
+          BabyLog v1.3
+          {getEnvironment() === 'development' && (
+            <span className="ml-2 px-1.5 py-0.5 rounded bg-accent-amber/20 text-accent-amber font-semibold">DEV</span>
+          )}
+        </p>
       </div>
 
       {/* Edit/Add Modal */}

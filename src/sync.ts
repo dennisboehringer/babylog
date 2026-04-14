@@ -4,6 +4,14 @@ import type { FeedEntry, DiaperEntry, PumpEntry, BabyProfile } from './types';
 
 const ROOM_KEY = 'babylog_room_code';
 
+// Firebase path prefix — lets us isolate dev data from prod
+// Set via VITE_FIREBASE_PATH_PREFIX env var (defaults to 'rooms' for prod)
+const PATH_PREFIX = import.meta.env.VITE_FIREBASE_PATH_PREFIX ?? 'rooms';
+
+export function getEnvironment(): 'production' | 'development' {
+  return PATH_PREFIX === 'rooms' ? 'production' : 'development';
+}
+
 export function getRoomCode(): string | null {
   return localStorage.getItem(ROOM_KEY);
 }
@@ -32,7 +40,7 @@ export async function pushAllData(roomCode: string) {
   const diapers = await db.diapers.toArray();
   const pumps = await db.pumps.toArray();
 
-  const roomRef = ref(rtdb, `rooms/${roomCode}`);
+  const roomRef = ref(rtdb, `${PATH_PREFIX}/${roomCode}`);
 
   const data: Record<string, any> = {
     babies: {},
@@ -53,7 +61,7 @@ export async function pushAllData(roomCode: string) {
 // Fetch all data from a room and merge into local IndexedDB
 // Returns true if the room exists and has data
 export async function fetchRoomData(roomCode: string): Promise<boolean> {
-  const roomRef = ref(rtdb, `rooms/${roomCode}`);
+  const roomRef = ref(rtdb, `${PATH_PREFIX}/${roomCode}`);
   const snapshot = await get(roomRef);
   const data = snapshot.val();
   if (!data) return false;
@@ -119,10 +127,10 @@ export async function pushEntry(
   id: string,
   data: any
 ) {
-  const entryRef = ref(rtdb, `rooms/${roomCode}/${collection}/${id}`);
+  const entryRef = ref(rtdb, `${PATH_PREFIX}/${roomCode}/${collection}/${id}`);
   await set(entryRef, data);
   // Update timestamp
-  const tsRef = ref(rtdb, `rooms/${roomCode}/updatedAt`);
+  const tsRef = ref(rtdb, `${PATH_PREFIX}/${roomCode}/updatedAt`);
   await set(tsRef, Date.now());
 }
 
@@ -132,7 +140,7 @@ export async function removeEntry(
   collection: 'feeds' | 'diapers' | 'pumps' | 'babies',
   id: string
 ) {
-  const entryRef = ref(rtdb, `rooms/${roomCode}/${collection}/${id}`);
+  const entryRef = ref(rtdb, `${PATH_PREFIX}/${roomCode}/${collection}/${id}`);
   await remove(entryRef);
 }
 
@@ -141,7 +149,7 @@ export function listenForChanges(
   roomCode: string,
   onUpdate: () => void
 ): () => void {
-  const roomRef = ref(rtdb, `rooms/${roomCode}`);
+  const roomRef = ref(rtdb, `${PATH_PREFIX}/${roomCode}`);
 
   const unsubscribe = onValue(roomRef, async (snapshot) => {
     const data = snapshot.val();

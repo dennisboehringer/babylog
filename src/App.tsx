@@ -5,6 +5,7 @@ import HomeScreen from './components/HomeScreen';
 import TrendsScreen from './components/TrendsScreen';
 import SettingsScreen from './components/SettingsScreen';
 import BottomNav from './components/BottomNav';
+import { getEnvironment } from './sync';
 
 type Tab = 'home' | 'trends' | 'settings';
 
@@ -28,8 +29,19 @@ export default function App() {
     return <Onboarding />;
   }
 
+  const isDev = getEnvironment() === 'development';
+
   return (
     <div className="flex flex-col h-full">
+      {/* Dev environment banner */}
+      {isDev && (
+        <div className="bg-accent-amber/15 border-b border-accent-amber/30 px-3 py-1 text-center">
+          <span className="text-[10px] font-bold uppercase tracking-wider text-accent-amber">
+            Development Environment · rooms-dev
+          </span>
+        </div>
+      )}
+
       {/* Header */}
       <header className="glass-header flex items-center justify-between px-5 py-3 border-b border-border relative z-10">
         <button
