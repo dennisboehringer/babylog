@@ -54,12 +54,13 @@ export default function NutritionRingsHero({ kcal, milk, water, unit }: Props) {
     <div className="glass-card rounded-3xl p-5 mb-4">
       <button
         onClick={() => setExpanded(e => !e)}
-        className="w-full flex items-center gap-5"
+        className="w-full flex items-center gap-3"
         aria-label={t('toddler.ring.expand')}
       >
-        {/* Concentric rings */}
-        <div className="relative flex-shrink-0" style={{ width: 180, height: 180 }}>
-          <svg width="180" height="180" viewBox="0 0 180 180">
+        {/* Concentric rings — sized for 375px-wide viewports without clipping
+            the legend's "/1000" target text. */}
+        <div className="relative flex-shrink-0" style={{ width: 150, height: 150 }}>
+          <svg width="150" height="150" viewBox="0 0 180 180">
             {rings.map(({ key, v, r, baseColor }) => {
               const pct = v.target > 0 ? Math.min(v.current / v.target, 1.4) : 0;
               const over = pct > 1.1;
@@ -104,14 +105,11 @@ export default function NutritionRingsHero({ kcal, milk, water, unit }: Props) {
                   className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
                   style={{ backgroundColor: color }}
                 />
-                <span className="text-[12px] uppercase tracking-wider text-text-muted font-semibold flex-shrink-0 w-14">
+                <span className="text-[11px] uppercase tracking-wider text-text-muted font-semibold flex-shrink-0 w-12">
                   {label}
                 </span>
-                <span className="text-[22px] font-bold tabular-nums leading-none" style={{ color }}>
-                  {valueText}
-                </span>
-                <span className="text-[13px] text-text-muted tabular-nums">
-                  {targetText}
+                <span className="text-[20px] font-bold tabular-nums leading-none whitespace-nowrap" style={{ color }}>
+                  {valueText}<span className="text-[12px] text-text-muted font-normal ml-0.5">{targetText}</span>
                 </span>
               </div>
             );

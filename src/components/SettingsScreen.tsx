@@ -46,7 +46,9 @@ export default function SettingsScreen() {
   // Edit fields
   const [editName, setEditName] = useState('');
   const [editDob, setEditDob] = useState('');
-  const [editGender, setEditGender] = useState<'male' | 'female' | 'other'>('male');
+  // Gender is optional + bias-free: no preselection in Add flow. Edit flow
+  // preserves the existing value. Saves as 'other' if Add never picks.
+  const [editGender, setEditGender] = useState<'male' | 'female' | 'other' | null>(null);
   const [editColor, setEditColor] = useState(PRESET_COLORS[0]);
   const [editUnit, setEditUnit] = useState<'oz' | 'mL'>('oz');
   const [editReminder, setEditReminder] = useState(180);
@@ -69,7 +71,7 @@ export default function SettingsScreen() {
   function openAdd() {
     setEditName('');
     setEditDob(new Date().toISOString().split('T')[0]);
-    setEditGender('male');
+    setEditGender(null);
     setEditColor(PRESET_COLORS[0]);
     setEditUnit('oz');
     setEditReminder(180);
@@ -83,7 +85,7 @@ export default function SettingsScreen() {
       ...editingBaby,
       name: editName.trim() || editingBaby.name,
       dob: editDob,
-      gender: editGender,
+      gender: editGender ?? 'other',
       themeColor: editColor,
       unitPreference: editUnit,
       reminderIntervalMinutes: editReminder,
@@ -99,7 +101,7 @@ export default function SettingsScreen() {
       id: uuid(),
       name: editName.trim() || t('baby.fallbackName'),
       dob: editDob,
-      gender: editGender,
+      gender: editGender ?? 'other',
       themeColor: editColor,
       unitPreference: editUnit,
       reminderIntervalMinutes: editReminder,
@@ -423,7 +425,7 @@ export default function SettingsScreen() {
           className="w-full px-4 py-3 rounded-xl bg-bg-input text-text-primary text-base mb-4 outline-none focus:ring-2 focus:ring-accent-blue"
         />
 
-        <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">{t('label.gender')}</label>
+        <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">{t('label.genderOptional')}</label>
         <div className="flex gap-2 mb-4">
           {(['male', 'female', 'other'] as const).map(g => (
             <button
