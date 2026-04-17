@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 interface Props {
   open: boolean;
@@ -8,10 +9,10 @@ interface Props {
 }
 
 export default function Modal({ open, onClose, title, children }: Props) {
-  // iOS Safari body-scroll lock: `overflow: hidden` is not enough — the page
-  // still rubber-bands. The canonical fix is to fix `body` in place at the
-  // current scroll position, and restore on close. This is what Headless UI,
-  // Radix, etc. all do internally.
+  // iOS Safari body-scroll lock: `overflow: hidden` alone is not enough —
+  // the page still rubber-bands. The canonical fix is to fix `body` in
+  // place at the current scroll position, and restore on close. This is
+  // what Headless UI, Radix, etc. all do internally.
   useEffect(() => {
     if (!open) return;
     const scrollY = window.scrollY;
@@ -36,25 +37,34 @@ export default function Modal({ open, onClose, title, children }: Props) {
 
   if (!open) return null;
 
-  return (
-    // 100dvh = dynamic viewport height. On iOS Safari the URL bar
-    // expands/collapses on scroll, so the static `100vh` overshoots
-    // the visible area and pushes the bottom of the sheet (and its
-    // Save button) below the home indicator.
+  // CRITICAL: portal to document.body. The previous fixes failed because the
+  // Modal was rendered INSIDE the App's `flex flex-col h-full` tree. Even with
+  // `position: fixed`, iOS Safari + dvh + ancestor flex/transform combinations
+  // were constraining the modal's effective height — that's why the sheet
+  // appeared shorter than the viewport with the bottom nav peeking through.
+  // Portaling escapes all of that.
+  const sheet = (
     <div
-      className="fixed inset-0 z-50 flex flex-col justify-end"
-      style={{ height: '100dvh' }}
+      className="fixed inset-0 z-[100] flex flex-col justify-end"
+      // Touch handlers prevent any touch on the BACKDROP from scrolling the
+      // body underneath. Inner sheet stops propagation so its scroll works.
+      onTouchMove={e => e.preventDefault()}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/70 animate-fade-in" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/70 animate-fade-in"
+        onClick={onClose}
+      />
 
-      {/* Sheet — `max-h-[90dvh]` (not 90vh) so it tracks the visible viewport
-          on iOS. `overscroll-contain` on the inner scroll area is what
-          actually prevents touch swipes from leaking through to the page
-          underneath ("scrolling the background"). */}
+      {/* Sheet — explicit calc keeps a 2rem buffer below the safe-area-bottom
+          so Save is always visible above iOS home indicator + dynamic URL bar. */}
       <div
         className="relative glass-surface rounded-t-3xl flex flex-col max-w-[420px] w-full mx-auto animate-slide-up border-t border-border-light"
-        style={{ maxHeight: '90dvh' }}
+        style={{
+          maxHeight: 'calc(100dvh - 2rem)',
+          marginBottom: 'env(safe-area-inset-bottom)',
+        }}
+        onTouchMove={e => e.stopPropagation()}
       >
         {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
@@ -75,11 +85,9 @@ export default function Modal({ open, onClose, title, children }: Props) {
           </button>
         </div>
 
-        {/* Content — overscroll-contain stops momentum scroll from passing
-            through to the page underneath. touch-pan-y permits vertical
-            scroll without horizontal hijacking. */}
+        {/* Scrollable content */}
         <div
-          className="flex-1 min-h-0 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-y-auto overscroll-contain touch-pan-y scrollable"
+          className="flex-1 min-h-0 px-5 pb-6 overflow-y-auto overscroll-contain touch-pan-y scrollable"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {children}
@@ -87,4 +95,8 @@ export default function Modal({ open, onClose, title, children }: Props) {
       </div>
     </div>
   );
+
+  // Portal — render directly under document.body so no ancestor flex column,
+  // transform, filter, or `h-full` can constrain the modal's positioning.
+  return createPortal(sheet, document.body);
 }
