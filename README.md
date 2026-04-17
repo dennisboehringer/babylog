@@ -1,4 +1,19 @@
-# React + TypeScript + Vite
+# BabyLog PWA — archived v1.0 (frozen 2026-04-17)
+
+> **This project is frozen.** Succeeded by the native **Small Hours** iOS app.
+> Security + critical-bug fixes only from here forward. No new features.
+
+- **Frozen tag:** `v1.0-pwa-final`
+- **Production:** still running at `babylog-kohl.vercel.app` for existing users (Dennis + Sofia). Zero-downtime archive — do not take the deployment offline.
+- **WIP at freeze:** preserved on branch `wip/pre-archive-2026-04-17` (meal-vision, sync, i18n work that hadn't shipped). Reference only; not being revived.
+- **Successor:** native SwiftUI rewrite as **Small Hours** — see `../what needs to be done.md` and `../small-hours-backend/`.
+- **Data migration:** one-time JSON export from this PWA → native import, deferred until Small Hours hits feature parity. No live sync.
+
+---
+
+## Original template notes (kept for maintainability of the frozen build)
+
+### React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
