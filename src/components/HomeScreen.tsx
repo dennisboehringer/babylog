@@ -13,6 +13,7 @@ import PumpModal from './PumpModal';
 import GuidanceBanner from './GuidanceBanner';
 import ToddlerHome from './ToddlerHome';
 import StageTransitionPrompt from './StageTransitionPrompt';
+import { formatEntryTime, formatRelativeShort } from '../timeFormat';
 
 type TFn = (key: string, params?: Record<string, string | number>) => string;
 
@@ -30,15 +31,8 @@ function formatTimeSince(ms: number, t: TFn): string {
   return t('time.shortMinutes', { n: m });
 }
 
-function formatRelativeTime(timestamp: number, t: TFn): string {
-  const diff = Date.now() - timestamp;
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return t('time.justNow');
-  if (min < 60) return t('time.minutesAgo', { n: min });
-  const h = Math.floor(min / 60);
-  if (h < 24) return t('time.hoursMinutesAgo', { h, m: min % 60 });
-  return t('time.daysAgo', { n: Math.floor(h / 24) });
-}
+// formatRelativeTime moved to ../timeFormat.ts as formatRelativeShort.
+// Used by both newborn (this file) and toddler timelines.
 
 export default function HomeScreen() {
   const { activeBaby } = useApp();
@@ -622,8 +616,11 @@ function TimelineRow({ item, onDelete, onEdit }: { item: TimelineEntry; onDelete
         className="flex items-center glass-card rounded-xl px-3.5 py-3 gap-3 cursor-pointer transition-colors active:bg-bg-card-hover"
       >
         <span className={`${accentColor} flex-shrink-0`}>{icon}</span>
-        <span className="flex-1 text-sm font-medium">{detail}</span>
-        <span className="text-xs text-text-muted tabular-nums">{formatRelativeTime(item.timestamp, t)}</span>
+        <span className="flex-1 text-sm font-medium min-w-0 truncate">{detail}</span>
+        <span className="flex flex-col items-end flex-shrink-0">
+          <span className="text-xs font-medium tabular-nums text-text-secondary">{formatEntryTime(item.timestamp, t)}</span>
+          <span className="text-[10px] text-text-muted tabular-nums">{formatRelativeShort(item.timestamp, t)}</span>
+        </span>
       </div>
       {showActions && (
         <div className="flex items-center justify-between gap-2 mt-1.5 mb-1 animate-scale-in">

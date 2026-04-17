@@ -118,26 +118,11 @@ export default function ReportsScreen() {
         <p className="text-sm text-text-muted mt-0.5">{t('reports.subtitle')}</p>
       </div>
 
-      {/* AI Disclaimer — bold, prominent, unmissable. Uses accent-amber which is theme-aware. */}
-      <div className="rounded-2xl p-4 mb-5 border-2 border-accent-amber/50 bg-accent-amber/10">
-        <div className="flex items-start gap-3">
-          <div className="w-7 h-7 rounded-full bg-accent-amber/25 flex items-center justify-center flex-shrink-0 mt-0.5">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-accent-amber">
-              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              <line x1="12" y1="9" x2="12" y2="13" />
-              <line x1="12" y1="17" x2="12.01" y2="17" />
-            </svg>
-          </div>
-          <div className="flex-1">
-            <p className="text-[13px] font-bold text-accent-amber leading-snug uppercase tracking-wide">
-              AI-generated interpretation
-            </p>
-            <p className="text-[12px] text-text-secondary mt-1.5 leading-relaxed">
-              Numbers come straight from your entries. The written summary and clinical assessment are produced by an AI model and may be wrong.
-              <span className="font-semibold text-text-primary"> Always consult your pediatrician or lactation consultant for medical decisions.</span>
-            </p>
-          </div>
-        </div>
+      {/* Calm informational note — universal disclosure handles the heavy lift. */}
+      <div className="rounded-2xl p-3.5 mb-5 bg-bg-card border border-border">
+        <p className="text-[12px] text-text-secondary leading-relaxed">
+          {t('reports.disclaimer')}
+        </p>
       </div>
 
       {/* Generate section */}

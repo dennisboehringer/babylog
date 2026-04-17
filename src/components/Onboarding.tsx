@@ -17,7 +17,13 @@ export default function Onboarding() {
   const { t } = useLanguage();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
-  const [dob, setDob] = useState(new Date().toISOString().split('T')[0]);
+  // Default to 7 days ago — most installs are early newborn. Toddler intake
+  // is rare; parent can scroll back if needed.
+  const [dob, setDob] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split('T')[0];
+  });
   // No preselection — bias-free. Parent must tap to choose; Next stays disabled
   // until they do (along with the existing name requirement).
   const [gender, setGender] = useState<'male' | 'female' | 'other' | null>(null);
@@ -162,7 +168,8 @@ export default function Onboarding() {
   // Baby details
   if (step === 1) {
     return (
-      <div className="flex flex-col h-full px-6 pt-12">
+      <div className="flex flex-col h-full px-6 pt-[max(2rem,env(safe-area-inset-top))]">
+        <OnboardingHeader currentStep={1} totalSteps={2} onBack={() => setStep(0)} t={t} />
         <h2 className="text-xl font-semibold mb-6">{t('onboarding.babyDetails.title')}</h2>
 
         <label className="text-text-secondary text-sm mb-1">{t('label.babyName')}</label>
@@ -183,7 +190,7 @@ export default function Onboarding() {
           className="w-full px-4 py-3 rounded-xl bg-bg-input text-text-primary text-lg mb-4 outline-none focus:ring-2 focus:ring-accent-blue"
         />
 
-        <label className="text-text-secondary text-sm mb-2">{t('label.gender')}</label>
+        <label className="text-text-secondary text-sm mb-2">{t('label.genderOptional')}</label>
         <div className="flex gap-2 mb-6">
           {(['male', 'female', 'other'] as const).map(g => (
             <button
@@ -202,7 +209,7 @@ export default function Onboarding() {
 
         <button
           onClick={() => setStep(2)}
-          disabled={!name.trim() || gender === null}
+          disabled={!name.trim()}
           className="w-full py-4 rounded-2xl bg-accent-blue text-white font-semibold text-lg mt-auto mb-8 disabled:opacity-40 active:opacity-80"
         >
           {t('btn.next')}
@@ -213,7 +220,8 @@ export default function Onboarding() {
 
   // Preferences
   return (
-    <div className="flex flex-col h-full px-6 pt-12">
+    <div className="flex flex-col h-full px-6 pt-[max(2rem,env(safe-area-inset-top))]">
+      <OnboardingHeader currentStep={2} totalSteps={2} onBack={() => setStep(1)} t={t} />
       <h2 className="text-xl font-semibold mb-6">{t('onboarding.preferences.title')}</h2>
 
       <label className="text-text-secondary text-sm mb-2">{t('label.themeColor')}</label>
@@ -255,6 +263,41 @@ export default function Onboarding() {
       >
         {t('btn.startTracking')}
       </button>
+    </div>
+  );
+}
+
+function OnboardingHeader({
+  currentStep, totalSteps, onBack, t,
+}: {
+  currentStep: number;
+  totalSteps: number;
+  onBack: () => void;
+  t: (k: string) => string;
+}) {
+  return (
+    <div className="flex items-center justify-between mb-6">
+      <button
+        onClick={onBack}
+        className="flex items-center gap-1 text-text-secondary text-sm font-medium min-h-[44px] -ml-2 px-2"
+        aria-label={t('btn.back')}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+        {t('btn.back')}
+      </button>
+      <div className="flex gap-1.5">
+        {Array.from({ length: totalSteps }, (_, i) => (
+          <span
+            key={i}
+            className={`block w-2 h-2 rounded-full transition-colors ${
+              i + 1 === currentStep ? 'bg-accent-blue' : 'bg-border'
+            }`}
+          />
+        ))}
+      </div>
+      <span className="w-[60px]" />
     </div>
   );
 }

@@ -158,7 +158,7 @@ export default function TrendsScreen() {
 
       {isToddlerLike && (
         <>
-          <ChartCard title={t('trends.chart.kcalPerDay')}>
+          <ChartCard title={t('trends.chart.kcalPerDay')} empty={meals.length === 0} emptyText={t('trends.chart.empty')}>
             <Bar
               data={{
                 labels,
@@ -173,7 +173,7 @@ export default function TrendsScreen() {
             />
           </ChartCard>
 
-          <ChartCard title={unit === 'oz' ? t('trends.chart.drinksPerDayOz') : t('trends.chart.drinksPerDayMl')}>
+          <ChartCard title={unit === 'oz' ? t('trends.chart.drinksPerDayOz') : t('trends.chart.drinksPerDayMl')} empty={drinks.length === 0} emptyText={t('trends.chart.empty')}>
             <Bar
               data={{
                 labels,
@@ -200,7 +200,7 @@ export default function TrendsScreen() {
             />
           </ChartCard>
 
-          <ChartCard title={t('trends.chart.mealsPerDay')}>
+          <ChartCard title={t('trends.chart.mealsPerDay')} empty={meals.length === 0} emptyText={t('trends.chart.empty')}>
             <Bar
               data={{
                 labels,
@@ -220,7 +220,7 @@ export default function TrendsScreen() {
       {!isToddlerLike && (
         <>
       {/* Feeds per day */}
-      <ChartCard title={t('trends.chart.feedsPerDay')} targetLabel={t('trends.chart.target', { n: 8 })}>
+      <ChartCard title={t('trends.chart.feedsPerDay')} targetLabel={t('trends.chart.typical', { n: 8 })}>
         <Bar
           data={{
             labels,
@@ -308,17 +308,27 @@ export default function TrendsScreen() {
   );
 }
 
-function ChartCard({ title, children, targetLabel }: { title: string; children: React.ReactNode; targetLabel?: string }) {
+function ChartCard({ title, children, targetLabel, empty, emptyText }: {
+  title: string;
+  children: React.ReactNode;
+  targetLabel?: string;
+  empty?: boolean;
+  emptyText?: string;
+}) {
   return (
     <div className="glass-card rounded-2xl p-4 mb-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-medium uppercase tracking-wider text-text-secondary">{title}</h3>
+        <h3 className="text-[12px] font-semibold text-text-secondary">{title}</h3>
         {targetLabel && (
           <span className="text-xs text-accent-green font-medium">{targetLabel}</span>
         )}
       </div>
       <div className="h-[160px]">
-        {children}
+        {empty ? (
+          <div className="h-full flex items-center justify-center">
+            <p className="text-sm text-text-muted">{emptyText}</p>
+          </div>
+        ) : children}
       </div>
     </div>
   );

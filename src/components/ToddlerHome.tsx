@@ -11,6 +11,7 @@ import DrinkQuickAddSheet from './DrinkQuickAddSheet';
 import MealFlow, { ConfidenceChip } from './MealFlow';
 import DiaperModal from './DiaperModal';
 import ToddlerGuidanceBanner from './ToddlerGuidanceBanner';
+import { formatEntryTime, formatRelativeShort } from '../timeFormat';
 
 type TFn = (key: string, params?: Record<string, string | number>) => string;
 
@@ -24,15 +25,7 @@ function ozFromAmount(amount: number, unit: 'oz' | 'mL'): number {
   return unit === 'mL' ? amount / 29.5735 : amount;
 }
 
-function relTime(ts: number, t: TFn): string {
-  const diff = Date.now() - ts;
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return t('time.justNow');
-  if (min < 60) return t('time.minutesAgo', { n: min });
-  const h = Math.floor(min / 60);
-  if (h < 24) return t('time.hoursMinutesAgo', { h, m: min % 60 });
-  return t('time.daysAgo', { n: Math.floor(h / 24) });
-}
+// relTime moved to ../timeFormat.ts as formatRelativeShort.
 
 export default function ToddlerHome() {
   const { activeBaby } = useApp();
@@ -393,7 +386,10 @@ function TimelineRow({
         {row.kind === 'meal' && <MealRowInner meal={row.meal} t={t} />}
         {row.kind === 'drink' && <DrinkRowInner drink={row.drink} unit={unit} t={t} />}
         {row.kind === 'diaper' && <DiaperRowInner diaper={row.diaper} t={t} />}
-        <span className="text-xs text-text-muted tabular-nums">{relTime(row.ts, t)}</span>
+        <span className="flex flex-col items-end flex-shrink-0">
+          <span className="text-xs font-medium tabular-nums text-text-secondary">{formatEntryTime(row.ts, t)}</span>
+          <span className="text-[10px] text-text-muted tabular-nums">{formatRelativeShort(row.ts, t)}</span>
+        </span>
       </div>
       {open && (
         <div className="flex items-center justify-between gap-2 mt-1.5 mb-1 animate-scale-in">
