@@ -172,6 +172,13 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
   }
 
   function handleReset() {
+    // CX/Hsieh: Reset is destructive — a parent who's been timing for 20 min
+    // shouldn't lose it to an accidental tap. Confirm only when there's
+    // actually time on the clock.
+    if (totalMs > 0) {
+      const ok = window.confirm(t('timer.reset.confirm'));
+      if (!ok) return;
+    }
     clearTimer();
     setTimer({
       activeSide: null,

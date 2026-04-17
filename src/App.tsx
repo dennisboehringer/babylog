@@ -123,6 +123,11 @@ export default function App() {
                     {baby.name.charAt(0).toUpperCase()}
                   </div>
                   <span className="text-[15px] font-medium">{baby.name}</span>
+                  {/* Caretaker Systems: caregivers must see the stage of every
+                      baby, not just the active one — switching between a newborn
+                      and a toddler with no visible cue invites logging the wrong
+                      child against the wrong rules. */}
+                  <StageBadge stage={effectiveStage(baby)} t={t} />
                   {baby.id === state.activeBabyId && (
                     <svg className="ml-auto text-accent-blue" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polyline points="20 6 9 17 4 12" />

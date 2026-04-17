@@ -199,6 +199,10 @@ const en: TranslationDict = {
   'trends.chart.bottleVolumeMl': 'Bottle volume (mL/day)',
   'trends.chart.wetDiapersPerDay': 'Wet diapers per day',
   'trends.chart.stoolsPerDay': 'Stools per day',
+  'trends.chart.kcalPerDay': 'Calories per day',
+  'trends.chart.drinksPerDayOz': 'Drinks (oz/day)',
+  'trends.chart.drinksPerDayMl': 'Drinks (mL/day)',
+  'trends.chart.mealsPerDay': 'Meals per day',
 
   // Settings
   'settings.title': 'Settings',
@@ -414,6 +418,7 @@ const en: TranslationDict = {
   // ----- Accuracy feedback prompt -----
   'feedback.prompt': 'Did the AI get that meal right?',
   'feedback.prompt.report': 'Was that report useful?',
+  'timer.reset.confirm': 'Reset the timer? Any elapsed time will be cleared.',
   'feedback.up': 'Yes, accurate',
   'feedback.down': 'No, inaccurate',
   'feedback.thanks': 'Thanks — that helps us improve.',

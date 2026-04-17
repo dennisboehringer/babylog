@@ -11,7 +11,8 @@ import {
 import { useApp } from '../context/AppContext';
 import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db';
-import type { FeedEntry, DiaperEntry, PumpEntry } from '../types';
+import { effectiveStage } from '../types';
+import type { FeedEntry, DiaperEntry, PumpEntry, MealEntry, DrinkEntry } from '../types';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -42,6 +43,8 @@ export default function TrendsScreen() {
   const [feeds, setFeeds] = useState<FeedEntry[]>([]);
   const [diapers, setDiapers] = useState<DiaperEntry[]>([]);
   const [_pumps, setPumps] = useState<PumpEntry[]>([]);
+  const [meals, setMeals] = useState<MealEntry[]>([]);
+  const [drinks, setDrinks] = useState<DrinkEntry[]>([]);
 
   useEffect(() => {
     if (!activeBaby) return;
@@ -50,10 +53,14 @@ export default function TrendsScreen() {
       db.feeds.where('babyId').equals(activeBaby.id).and(f => f.timestamp >= cutoff).toArray(),
       db.diapers.where('babyId').equals(activeBaby.id).and(d => d.timestamp >= cutoff).toArray(),
       db.pumps.where('babyId').equals(activeBaby.id).and(p => p.timestamp >= cutoff).toArray(),
-    ]).then(([f, d, p]) => {
+      db.meals.where('babyId').equals(activeBaby.id).and(m => m.timestamp >= cutoff).toArray(),
+      db.drinks.where('babyId').equals(activeBaby.id).and(d => d.timestamp >= cutoff).toArray(),
+    ]).then(([f, d, p, m, dr]) => {
       setFeeds(f);
       setDiapers(d);
       setPumps(p);
+      setMeals(m);
+      setDrinks(dr);
     });
   }, [activeBaby, range]);
 
@@ -81,6 +88,19 @@ export default function TrendsScreen() {
   const unspecifiedPerDay = unspecifiedOzPerDay.map(toUnit);
   const wetPerDay = days.map(d => diapers.filter(di => di.timestamp >= d.start && di.timestamp < d.end && (di.type === 'wet' || di.type === 'both')).length);
   const stoolPerDay = days.map(d => diapers.filter(di => di.timestamp >= d.start && di.timestamp < d.end && (di.type === 'stool' || di.type === 'both')).length);
+
+  // Toddler-stage trends
+  const ozFromDrink = (d: DrinkEntry) => d.unit === 'mL' ? d.amount / 29.5735 : d.amount;
+  const kcalPerDay = days.map(d =>
+    Math.round(meals.filter(m => m.timestamp >= d.start && m.timestamp < d.end)
+      .reduce((s, m) => s + (m.totals?.kcal ?? 0), 0)));
+  const milkOzPerDay = days.map(d => toUnit(
+    drinks.filter(dr => dr.timestamp >= d.start && dr.timestamp < d.end && (dr.kind === 'milk' || dr.kind.startsWith('milk-')))
+      .reduce((s, dr) => s + ozFromDrink(dr), 0)));
+  const waterOzPerDay = days.map(d => toUnit(
+    drinks.filter(dr => dr.timestamp >= d.start && dr.timestamp < d.end && dr.kind === 'water')
+      .reduce((s, dr) => s + ozFromDrink(dr), 0)));
+  const mealsPerDay = days.map(d => meals.filter(m => m.timestamp >= d.start && m.timestamp < d.end).length);
 
   const chartOpts = {
     responsive: true,
@@ -114,6 +134,10 @@ export default function TrendsScreen() {
   // (unit already computed above)
 
   if (!activeBaby) return null;
+  // Stage-aware: render the right set of charts per stage so toddler users
+  // don't see empty newborn charts (and vice versa).
+  const stage = effectiveStage(activeBaby);
+  const isToddlerLike = stage === 'toddler' || stage === 'preschool';
 
   return (
     <div className="flex-1 scrollable px-4 pt-4 pb-4">
@@ -132,6 +156,69 @@ export default function TrendsScreen() {
         ))}
       </div>
 
+      {isToddlerLike && (
+        <>
+          <ChartCard title={t('trends.chart.kcalPerDay')}>
+            <Bar
+              data={{
+                labels,
+                datasets: [{
+                  data: kcalPerDay,
+                  backgroundColor: '#3FCF8E80',
+                  borderRadius: 6,
+                  borderSkipped: false,
+                }],
+              }}
+              options={chartOpts}
+            />
+          </ChartCard>
+
+          <ChartCard title={unit === 'oz' ? t('trends.chart.drinksPerDayOz') : t('trends.chart.drinksPerDayMl')}>
+            <Bar
+              data={{
+                labels,
+                datasets: [
+                  {
+                    label: t('drink.kind.milk'),
+                    data: milkOzPerDay,
+                    backgroundColor: '#4A9EFF99',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    stack: 'liq',
+                  },
+                  {
+                    label: t('drink.kind.water'),
+                    data: waterOzPerDay,
+                    backgroundColor: '#33C2D699',
+                    borderRadius: 6,
+                    borderSkipped: false,
+                    stack: 'liq',
+                  },
+                ],
+              }}
+              options={stackedChartOpts}
+            />
+          </ChartCard>
+
+          <ChartCard title={t('trends.chart.mealsPerDay')}>
+            <Bar
+              data={{
+                labels,
+                datasets: [{
+                  data: mealsPerDay,
+                  backgroundColor: '#3FCF8E60',
+                  borderRadius: 6,
+                  borderSkipped: false,
+                }],
+              }}
+              options={chartOpts}
+            />
+          </ChartCard>
+        </>
+      )}
+
+      {!isToddlerLike && (
+        <>
       {/* Feeds per day */}
       <ChartCard title={t('trends.chart.feedsPerDay')} targetLabel={t('trends.chart.target', { n: 8 })}>
         <Bar
@@ -215,6 +302,8 @@ export default function TrendsScreen() {
           options={chartOpts}
         />
       </ChartCard>
+        </>
+      )}
     </div>
   );
 }

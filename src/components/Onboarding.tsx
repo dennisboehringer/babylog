@@ -18,7 +18,9 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [dob, setDob] = useState(new Date().toISOString().split('T')[0]);
-  const [gender, setGender] = useState<'male' | 'female' | 'other'>('male');
+  // No preselection — bias-free. Parent must tap to choose; Next stays disabled
+  // until they do (along with the existing name requirement).
+  const [gender, setGender] = useState<'male' | 'female' | 'other' | null>(null);
   const [color, setColor] = useState(PRESET_COLORS[0]);
   const [unit, setUnit] = useState<'oz' | 'mL'>('oz');
 
@@ -33,7 +35,7 @@ export default function Onboarding() {
       id: uuid(),
       name: name.trim() || t('baby.fallbackName'),
       dob,
-      gender,
+      gender: gender ?? 'other',
       themeColor: color,
       unitPreference: unit,
       reminderIntervalMinutes: 180,
@@ -200,7 +202,7 @@ export default function Onboarding() {
 
         <button
           onClick={() => setStep(2)}
-          disabled={!name.trim()}
+          disabled={!name.trim() || gender === null}
           className="w-full py-4 rounded-2xl bg-accent-blue text-white font-semibold text-lg mt-auto mb-8 disabled:opacity-40 active:opacity-80"
         >
           {t('btn.next')}

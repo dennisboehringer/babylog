@@ -290,11 +290,11 @@ export default function ChatScreen() {
         {/* Did you know card */}
         <div className="glass-card rounded-2xl p-4 mb-4 border border-accent-blue/15">
           <div className="flex items-start justify-between gap-2 mb-2">
-            <p className="text-[10px] font-bold uppercase tracking-wider text-accent-blue">
+            <p className="text-[11px] font-semibold text-accent-blue">
               {t('chat.didYouKnow')}
             </p>
             <button
-              onClick={() => loadInsight(true)}
+              onClick={() => gateAi(() => loadInsight(true))}
               disabled={aiInsightLoading || !isOnline}
               className="text-[10px] text-text-muted font-medium flex items-center gap-1 min-h-[24px] px-1 disabled:opacity-40"
             >

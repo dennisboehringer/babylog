@@ -321,14 +321,14 @@ function NewbornHome() {
         {showPumpHero ? (
           <div className="flex gap-2 mb-4">
             <div className={`flex-1 min-w-0 rounded-2xl p-4 text-center ${heroClass}`}>
-              <p className="text-text-secondary text-[10px] font-medium uppercase tracking-wider mb-1">{t('home.hero.lastFeed')}</p>
+              <p className="text-text-secondary text-[10px] font-medium tracking-wide mb-1">{t('home.hero.lastFeed')}</p>
               <p className={`text-[30px] font-bold tabular-nums leading-none ${feedColor}`}>
                 {timeSinceLastFeed !== null ? formatTimeSince(timeSinceLastFeed, t) : '—'}
               </p>
               <p className="text-text-muted text-[11px] mt-2 truncate">{describeFeed(lastFeed)}</p>
             </div>
             <div className="flex-1 min-w-0 rounded-2xl p-4 text-center hero-neutral">
-              <p className="text-text-secondary text-[10px] font-medium uppercase tracking-wider mb-1">{t('home.hero.lastPump')}</p>
+              <p className="text-text-secondary text-[10px] font-medium tracking-wide mb-1">{t('home.hero.lastPump')}</p>
               <p className="text-[30px] font-bold tabular-nums leading-none text-accent-purple">
                 {timeSinceLastPump !== null ? formatTimeSince(timeSinceLastPump, t) : '—'}
               </p>
@@ -337,7 +337,7 @@ function NewbornHome() {
           </div>
         ) : (
           <div className={`rounded-2xl p-5 mb-4 text-center ${heroClass}`}>
-            <p className="text-text-secondary text-xs font-medium uppercase tracking-wider mb-1.5">{t('home.hero.timeSinceLastFeed')}</p>
+            <p className="text-text-secondary text-xs font-medium tracking-wide mb-1.5">{t('home.hero.timeSinceLastFeed')}</p>
             <p className={`text-[42px] font-bold tabular-nums leading-none ${feedColor}`}>
               {timeSinceLastFeed !== null ? formatTimeSince(timeSinceLastFeed, t) : '—'}
             </p>
