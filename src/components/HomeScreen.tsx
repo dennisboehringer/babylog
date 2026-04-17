@@ -195,14 +195,19 @@ function NewbornHome() {
   void now;
   const timeSinceLastFeed = lastFeed ? Date.now() - lastFeed.timestamp : null;
   const reminderMs = activeBaby.reminderIntervalMinutes * 60 * 1000;
+  const reminderEnabled = activeBaby.reminderIntervalMinutes > 0;
 
-  const feedStatus = timeSinceLastFeed === null
+  // When reminders are off (toddler/preschool stages, or newborn parents who
+  // opted out), the hero stays calm regardless of elapsed time — no overdue.
+  const feedStatus = !reminderEnabled
     ? 'neutral'
-    : timeSinceLastFeed < 2 * 3600000
-      ? 'green'
-      : timeSinceLastFeed < reminderMs
-        ? 'amber'
-        : 'red';
+    : timeSinceLastFeed === null
+      ? 'neutral'
+      : timeSinceLastFeed < 2 * 3600000
+        ? 'green'
+        : timeSinceLastFeed < reminderMs
+          ? 'amber'
+          : 'red';
 
   const feedColor = {
     neutral: 'text-text-secondary',

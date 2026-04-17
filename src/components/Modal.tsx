@@ -45,8 +45,11 @@ export default function Modal({ open, onClose, title, children }: Props) {
           </button>
         </div>
 
-        {/* Content */}
-        <div className="px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-y-auto scrollable">
+        {/* Content — flex-1 + min-h-0 are required for overflow-y-auto to
+            actually scroll inside a flex column. Without min-h-0 a flex
+            child won't shrink below its content size and the scroll
+            container expands instead of scrolling. */}
+        <div className="flex-1 min-h-0 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] overflow-y-auto scrollable">
           {children}
         </div>
       </div>

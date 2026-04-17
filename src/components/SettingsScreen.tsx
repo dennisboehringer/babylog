@@ -7,6 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db';
 import { getEnvironment } from '../sync';
 import { getByoKey, setByoKey } from '../reports/claude';
+import { stageFromAge } from '../types';
 import type { BabyProfile } from '../types';
 import Modal from './Modal';
 import LanguagePicker from './LanguagePicker';
@@ -18,10 +19,13 @@ const PRESET_COLORS = [
   '#B180F7', '#F778BA', '#56D4DD', '#E09B54',
 ];
 
+// 0 = no reminder. Newborn parents can opt out; toddler parents see this
+// section hidden entirely (the timing concept is newborn-specific).
 const REMINDER_OPTIONS = [
-  { label: '2h', value: 120 },
-  { label: '2.5h', value: 150 },
-  { label: '3h', value: 180 },
+  { labelKey: 'settings.reminder.off', value: 0 },
+  { labelKey: 'settings.reminder.2h', value: 120 },
+  { labelKey: 'settings.reminder.2_5h', value: 150 },
+  { labelKey: 'settings.reminder.3h', value: 180 },
 ];
 
 export default function SettingsScreen() {
@@ -178,10 +182,15 @@ export default function SettingsScreen() {
           <SectionLabel>{t('settings.section.preferences')}</SectionLabel>
           <div className="glass-card rounded-2xl divide-y divide-border mb-5">
             <SettingsRow label={t('label.unitPreference')} value={activeBaby.unitPreference} />
-            <SettingsRow
-              label={t('label.feedReminder')}
-              value={t('settings.prefs.everyHours', { h: (activeBaby.reminderIntervalMinutes / 60).toFixed(1).replace('.0', '') })}
-            />
+            {(() => {
+              // Hide reminder row for toddler+; show "Off" for 0; otherwise hours.
+              const stage = stageFromAge(activeBaby.dob);
+              if (stage !== 'newborn' && stage !== 'weaning') return null;
+              const value = activeBaby.reminderIntervalMinutes === 0
+                ? t('settings.reminder.off')
+                : t('settings.prefs.everyHours', { h: (activeBaby.reminderIntervalMinutes / 60).toFixed(1).replace('.0', '') });
+              return <SettingsRow label={t('label.feedReminder')} value={value} />;
+            })()}
           </div>
 
           <SectionLabel>{t('settings.section.collaboration')}</SectionLabel>
@@ -461,22 +470,28 @@ export default function SettingsScreen() {
           ))}
         </div>
 
-        <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">{t('label.feedReminder')}</label>
-        <div className="flex gap-2 mb-5">
-          {REMINDER_OPTIONS.map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => setEditReminder(opt.value)}
-              className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                editReminder === opt.value ? 'bg-accent-blue text-white' : 'bg-bg-card text-text-secondary'
-              }`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
+        {/* Feeding reminder is newborn/weaning concept only.
+            Toddler+ doesn't have a "feed every Nh" cadence — hide entirely. */}
+        {(stageFromAge(editDob) === 'newborn' || stageFromAge(editDob) === 'weaning') && (
+          <>
+            <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">{t('label.feedReminder')}</label>
+            <div className="flex gap-2 mb-5">
+              {REMINDER_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => setEditReminder(opt.value)}
+                  className={`flex-1 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                    editReminder === opt.value ? 'bg-accent-blue text-white' : 'bg-bg-card text-text-secondary'
+                  }`}
+                >
+                  {t(opt.labelKey)}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
 
-        <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">{t('label.pumping')}</label>
+        <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">{t('label.breastfeeding')}</label>
         <button
           onClick={() => setEditAlternateSides(v => !v)}
           className="w-full flex items-center justify-between py-3 px-4 rounded-xl bg-bg-card mb-5"
