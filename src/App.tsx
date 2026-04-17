@@ -1,25 +1,59 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from './context/AppContext';
+import { useLanguage } from './context/LanguageContext';
 import Onboarding from './components/Onboarding';
 import HomeScreen from './components/HomeScreen';
 import TrendsScreen from './components/TrendsScreen';
+import ReportsScreen from './components/ReportsScreen';
+import ChatScreen from './components/ChatScreen';
 import SettingsScreen from './components/SettingsScreen';
 import BottomNav from './components/BottomNav';
+import LanguagePicker from './components/LanguagePicker';
+import MealReadyToast from './components/MealReadyToast';
+import AccuracyFeedbackPrompt from './components/AccuracyFeedbackPrompt';
 import { getEnvironment } from './sync';
+import { effectiveStage } from './types';
 
-type Tab = 'home' | 'trends' | 'settings';
+type Tab = 'home' | 'trends' | 'reports' | 'chat' | 'settings';
 
 export default function App() {
   const { state, dispatch, activeBaby } = useApp();
+  const { t, hasSelectedLanguage, setLanguage, language } = useLanguage();
   const [tab, setTab] = useState<Tab>('home');
   const [showSwitcher, setShowSwitcher] = useState(false);
+  const [languageConfirmed, setLanguageConfirmed] = useState(hasSelectedLanguage);
+  const [feedback, setFeedback] = useState<{ refId: string; surface: 'meal' | 'report' } | null>(null);
+
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ refId: string; surface: 'meal' | 'report' }>).detail;
+      if (detail?.refId) setFeedback({ refId: detail.refId, surface: detail.surface });
+    };
+    window.addEventListener('babylog:feedback-prompt', handler);
+    return () => window.removeEventListener('babylog:feedback-prompt', handler);
+  }, []);
+
+  // First-use language prompt: shown before Onboarding and before main UI
+  // if the user has never picked a language. We pre-fill with the detected
+  // language so pressing Next confirms the default.
+  if (!languageConfirmed) {
+    return (
+      <LanguagePicker
+        variant="modal"
+        onDone={() => {
+          setLanguage(language);
+          setLanguageConfirmed(true);
+        }}
+      />
+    );
+  }
 
   if (!state.loaded) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-2 border-accent-blue/30 border-t-accent-blue rounded-full animate-spin" />
-          <span className="text-text-muted text-sm">Loading...</span>
+          <span className="text-text-muted text-sm">{t('app.loading')}</span>
         </div>
       </div>
     );
@@ -37,7 +71,7 @@ export default function App() {
       {isDev && (
         <div className="bg-accent-amber/15 border-b border-accent-amber/30 px-3 py-1 text-center">
           <span className="text-[10px] font-bold uppercase tracking-wider text-accent-amber">
-            Development Environment · rooms-dev
+            {t('app.devBanner')}
           </span>
         </div>
       )}
@@ -57,7 +91,8 @@ export default function App() {
           >
             {activeBaby?.name?.charAt(0)?.toUpperCase() ?? 'B'}
           </div>
-          <h1 className="text-[17px] font-semibold tracking-tight">{activeBaby?.name ?? 'BabyLog'}</h1>
+          <h1 className="text-[17px] font-semibold tracking-tight">{activeBaby?.name ?? t('app.name')}</h1>
+          {activeBaby && <StageBadge stage={effectiveStage(activeBaby)} t={t} />}
           {state.babies.length > 1 && (
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="text-text-muted ml-0.5">
               <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -103,10 +138,43 @@ export default function App() {
       {/* Content */}
       {tab === 'home' && <HomeScreen />}
       {tab === 'trends' && <TrendsScreen />}
+      {tab === 'chat' && <ChatScreen />}
+      {tab === 'reports' && <ReportsScreen />}
       {tab === 'settings' && <SettingsScreen />}
+
+      {/* Background meal-photo analysis toast — sits above the bottom nav */}
+      <MealReadyToast />
+
+      {/* Accuracy feedback prompt (meal: every 5th, report: every 3rd) */}
+      <AccuracyFeedbackPrompt
+        refId={feedback?.refId ?? null}
+        surface={feedback?.surface ?? 'meal'}
+        onClose={() => setFeedback(null)}
+      />
 
       {/* Bottom nav */}
       <BottomNav tab={tab} onTabChange={setTab} />
     </div>
+  );
+}
+
+// Caretaker Systems veto: caregivers must always know which child + stage
+// they're logging against. Compact chip next to the active baby's name.
+function StageBadge({
+  stage, t,
+}: {
+  stage: 'newborn' | 'weaning' | 'toddler' | 'preschool';
+  t: (k: string) => string;
+}) {
+  const colors: Record<string, string> = {
+    newborn:   'bg-accent-blue/12 text-accent-blue',
+    weaning:   'bg-accent-amber/12 text-accent-amber',
+    toddler:   'bg-accent-green/12 text-accent-green',
+    preschool: 'bg-accent-purple/12 text-accent-purple',
+  };
+  return (
+    <span className={`px-2.5 py-1 rounded-full text-[12px] font-semibold ${colors[stage]}`}>
+      {t(`stage.badge.${stage}`)}
+    </span>
   );
 }

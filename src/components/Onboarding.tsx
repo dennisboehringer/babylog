@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { db } from '../db';
 import { useApp } from '../context/AppContext';
 import { useSync } from '../context/SyncContext';
+import { useLanguage } from '../context/LanguageContext';
 import type { BabyProfile } from '../types';
 
 const PRESET_COLORS = [
@@ -12,7 +13,8 @@ const PRESET_COLORS = [
 
 export default function Onboarding() {
   const { dispatch } = useApp();
-  const { joinRoom } = useSync();
+  const { joinCollab } = useSync();
+  const { t } = useLanguage();
   const [step, setStep] = useState(0);
   const [name, setName] = useState('');
   const [dob, setDob] = useState(new Date().toISOString().split('T')[0]);
@@ -29,7 +31,7 @@ export default function Onboarding() {
   async function handleFinish() {
     const baby: BabyProfile = {
       id: uuid(),
-      name: name.trim() || 'Baby',
+      name: name.trim() || t('baby.fallbackName'),
       dob,
       gender,
       themeColor: color,
@@ -41,14 +43,14 @@ export default function Onboarding() {
     dispatch({ type: 'ADD_BABY', baby });
   }
 
-  async function handleJoinRoom() {
+  async function handleJoinCollab() {
     if (joinCode.length !== 6) return;
     setJoining(true);
     setJoinError('');
 
-    const success = await joinRoom(joinCode);
+    const success = await joinCollab(joinCode);
     if (!success) {
-      setJoinError('Room not found. Check the code and try again.');
+      setJoinError(t('onboarding.joinPartner.notFound'));
       setJoining(false);
     }
     // If success, AppContext will have babies and App.tsx will show main screen
@@ -66,7 +68,7 @@ export default function Onboarding() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
-            Back
+            {t('btn.back')}
           </button>
 
           <div className="text-center mb-8">
@@ -78,9 +80,9 @@ export default function Onboarding() {
                 <path d="M16 3.13a4 4 0 010 7.75" />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold mb-2">Join Partner's Room</h2>
+            <h2 className="text-xl font-semibold mb-2">{t('onboarding.joinPartner.title')}</h2>
             <p className="text-text-secondary text-sm">
-              Enter the 6-digit code from your partner's phone to sync all data.
+              {t('onboarding.joinPartner.description')}
             </p>
           </div>
 
@@ -105,17 +107,17 @@ export default function Onboarding() {
           )}
 
           <button
-            onClick={handleJoinRoom}
+            onClick={handleJoinCollab}
             disabled={joinCode.length !== 6 || joining}
             className="w-full py-4 rounded-2xl bg-accent-blue text-white font-semibold text-lg disabled:opacity-40 active:opacity-80 flex items-center justify-center gap-2"
           >
             {joining ? (
               <>
                 <span className="inline-block w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Connecting...
+                {t('onboarding.joinPartner.connecting')}
               </>
             ) : (
-              'Join Room'
+              t('btn.joinCollab')
             )}
           </button>
         </div>
@@ -131,9 +133,9 @@ export default function Onboarding() {
           <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-accent-blue/20 to-accent-blue/5 flex items-center justify-center mb-6">
             <span className="text-4xl">👶</span>
           </div>
-          <h1 className="text-2xl font-bold mb-2">Welcome to BabyLog</h1>
+          <h1 className="text-2xl font-bold mb-2">{t('onboarding.welcome.title')}</h1>
           <p className="text-text-secondary text-center mb-2 max-w-xs">
-            Track feeds, diapers, and pumping — built for tired parents.
+            {t('onboarding.welcome.description')}
           </p>
         </div>
 
@@ -142,13 +144,13 @@ export default function Onboarding() {
             onClick={() => setStep(1)}
             className="w-full py-4 rounded-2xl bg-accent-blue text-white font-semibold text-lg active:opacity-80"
           >
-            Get Started
+            {t('btn.getStarted')}
           </button>
           <button
             onClick={() => setShowJoin(true)}
             className="w-full py-4 rounded-2xl bg-bg-card text-text-primary font-medium text-base active:opacity-80 border border-border"
           >
-            Join Partner's Room
+            {t('btn.joinPartnerCollab')}
           </button>
         </div>
       </div>
@@ -159,19 +161,19 @@ export default function Onboarding() {
   if (step === 1) {
     return (
       <div className="flex flex-col h-full px-6 pt-12">
-        <h2 className="text-xl font-semibold mb-6">About your baby</h2>
+        <h2 className="text-xl font-semibold mb-6">{t('onboarding.babyDetails.title')}</h2>
 
-        <label className="text-text-secondary text-sm mb-1">Baby's name</label>
+        <label className="text-text-secondary text-sm mb-1">{t('label.babyName')}</label>
         <input
           type="text"
           value={name}
           onChange={e => setName(e.target.value)}
-          placeholder="Enter name"
+          placeholder={t('placeholder.babyName')}
           autoFocus
           className="w-full px-4 py-3 rounded-xl bg-bg-input text-text-primary text-lg mb-4 outline-none focus:ring-2 focus:ring-accent-blue"
         />
 
-        <label className="text-text-secondary text-sm mb-1">Date of birth</label>
+        <label className="text-text-secondary text-sm mb-1">{t('label.dateOfBirth')}</label>
         <input
           type="date"
           value={dob}
@@ -179,19 +181,19 @@ export default function Onboarding() {
           className="w-full px-4 py-3 rounded-xl bg-bg-input text-text-primary text-lg mb-4 outline-none focus:ring-2 focus:ring-accent-blue"
         />
 
-        <label className="text-text-secondary text-sm mb-2">Gender</label>
+        <label className="text-text-secondary text-sm mb-2">{t('label.gender')}</label>
         <div className="flex gap-2 mb-6">
           {(['male', 'female', 'other'] as const).map(g => (
             <button
               key={g}
               onClick={() => setGender(g)}
-              className={`flex-1 py-3 rounded-xl text-base font-medium capitalize ${
+              className={`flex-1 py-3 rounded-xl text-base font-medium ${
                 gender === g
                   ? 'bg-accent-blue text-white'
                   : 'bg-bg-card text-text-secondary'
               }`}
             >
-              {g}
+              {t(`gender.${g}`)}
             </button>
           ))}
         </div>
@@ -201,7 +203,7 @@ export default function Onboarding() {
           disabled={!name.trim()}
           className="w-full py-4 rounded-2xl bg-accent-blue text-white font-semibold text-lg mt-auto mb-8 disabled:opacity-40 active:opacity-80"
         >
-          Next
+          {t('btn.next')}
         </button>
       </div>
     );
@@ -210,9 +212,9 @@ export default function Onboarding() {
   // Preferences
   return (
     <div className="flex flex-col h-full px-6 pt-12">
-      <h2 className="text-xl font-semibold mb-6">Preferences</h2>
+      <h2 className="text-xl font-semibold mb-6">{t('onboarding.preferences.title')}</h2>
 
-      <label className="text-text-secondary text-sm mb-2">Theme color</label>
+      <label className="text-text-secondary text-sm mb-2">{t('label.themeColor')}</label>
       <div className="flex gap-3 mb-6 flex-wrap">
         {PRESET_COLORS.map(c => (
           <button
@@ -228,7 +230,7 @@ export default function Onboarding() {
         ))}
       </div>
 
-      <label className="text-text-secondary text-sm mb-2">Unit preference</label>
+      <label className="text-text-secondary text-sm mb-2">{t('label.unitPreference')}</label>
       <div className="flex gap-2 mb-6">
         {(['oz', 'mL'] as const).map(u => (
           <button
@@ -249,7 +251,7 @@ export default function Onboarding() {
         onClick={handleFinish}
         className="w-full py-4 rounded-2xl bg-accent-blue text-white font-semibold text-lg mt-auto mb-8 active:opacity-80"
       >
-        Start Tracking
+        {t('btn.startTracking')}
       </button>
     </div>
   );

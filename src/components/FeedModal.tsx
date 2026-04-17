@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Modal from './Modal';
 import BreastFeedTimer from './BreastFeedTimer';
 import BottleFeedModal from './BottleFeedModal';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Props {
   open: boolean;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function FeedModal({ open, onClose, onSaved }: Props) {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<'choose' | 'breast' | 'bottle'>('choose');
 
   function handleClose() {
@@ -26,7 +28,7 @@ export default function FeedModal({ open, onClose, onSaved }: Props) {
   }
 
   return (
-    <Modal open={open} onClose={handleClose} title="Log Feed">
+    <Modal open={open} onClose={handleClose} title={t('modal.logFeed')}>
       <div className="flex gap-3 pb-2">
         <button
           onClick={() => setMode('breast')}
@@ -38,8 +40,8 @@ export default function FeedModal({ open, onClose, onSaved }: Props) {
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
             </svg>
           </div>
-          <span className="text-[15px] font-semibold">Breast</span>
-          <span className="text-xs text-text-muted mt-1">With timer</span>
+          <span className="text-[15px] font-semibold">{t('feed.choose.breast')}</span>
+          <span className="text-xs text-text-muted mt-1">{t('feed.choose.breastDesc')}</span>
         </button>
         <button
           onClick={() => setMode('bottle')}
@@ -52,8 +54,8 @@ export default function FeedModal({ open, onClose, onSaved }: Props) {
               <path d="M8 21h8" />
             </svg>
           </div>
-          <span className="text-[15px] font-semibold">Bottle</span>
-          <span className="text-xs text-text-muted mt-1">Log amount</span>
+          <span className="text-[15px] font-semibold">{t('feed.choose.bottle')}</span>
+          <span className="text-xs text-text-muted mt-1">{t('feed.choose.bottleDesc')}</span>
         </button>
       </div>
     </Modal>

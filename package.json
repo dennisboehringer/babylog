@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "deploy:dev": "bash scripts/deploy-dev.sh",
-    "deploy:prod": "vercel --prod --yes"
+    "deploy:prod": "npx vercel --prod --yes"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.2",

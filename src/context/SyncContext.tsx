@@ -1,34 +1,35 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import {
-  getRoomCode, setRoomCode as storeRoomCode, clearRoomCode,
-  generateRoomCode, pushAllData, pushEntry, removeEntry, listenForChanges,
-  fetchRoomData,
+  getCollabCode, setCollabCode as storeCollabCode, clearCollabCode,
+  generateCollabCode, pushAllData, pushEntry, removeEntry, listenForChanges,
+  fetchCollabData,
+  type SyncCollection,
 } from '../sync';
 import { db } from '../db';
 import { useApp } from './AppContext';
 
 interface SyncState {
-  roomCode: string | null;
+  collabCode: string | null;
   syncing: boolean;
   connected: boolean;
 }
 
 interface SyncContextValue {
   sync: SyncState;
-  createRoom: () => Promise<string>;
-  joinRoom: (code: string) => Promise<boolean>;
-  leaveRoom: () => void;
-  syncPush: (collection: 'feeds' | 'diapers' | 'pumps' | 'babies', id: string, data: any) => Promise<void>;
-  syncRemove: (collection: 'feeds' | 'diapers' | 'pumps' | 'babies', id: string) => Promise<void>;
+  startCollab: () => Promise<string>;
+  joinCollab: (code: string) => Promise<boolean>;
+  leaveCollab: () => void;
+  syncPush: (collection: SyncCollection, id: string, data: any) => Promise<void>;
+  syncRemove: (collection: SyncCollection, id: string) => Promise<void>;
   onRemoteUpdate: (() => void) | null;
   setOnRemoteUpdate: (cb: (() => void) | null) => void;
 }
 
 const SyncCtx = createContext<SyncContextValue>({
-  sync: { roomCode: null, syncing: false, connected: false },
-  createRoom: async () => '',
-  joinRoom: async () => false,
-  leaveRoom: () => {},
+  sync: { collabCode: null, syncing: false, connected: false },
+  startCollab: async () => '',
+  joinCollab: async () => false,
+  leaveCollab: () => {},
   syncPush: async () => {},
   syncRemove: async () => {},
   onRemoteUpdate: null,
@@ -38,9 +39,9 @@ const SyncCtx = createContext<SyncContextValue>({
 export function SyncProvider({ children }: { children: ReactNode }) {
   const { dispatch } = useApp();
   const [sync, setSync] = useState<SyncState>({
-    roomCode: getRoomCode(),
+    collabCode: getCollabCode(),
     syncing: false,
-    connected: !!getRoomCode(),
+    connected: !!getCollabCode(),
   });
   const [onRemoteUpdate, setOnRemoteUpdate] = useState<(() => void) | null>(null);
 
@@ -52,37 +53,37 @@ export function SyncProvider({ children }: { children: ReactNode }) {
 
   // Listen for remote changes when connected
   useEffect(() => {
-    if (!sync.roomCode) return;
+    if (!sync.collabCode) return;
 
-    const unsub = listenForChanges(sync.roomCode, async () => {
+    const unsub = listenForChanges(sync.collabCode, async () => {
       // Always refresh babies from IndexedDB — new babies may have synced
       await refreshBabies();
       if (onRemoteUpdate) onRemoteUpdate();
     });
 
     return unsub;
-  }, [sync.roomCode, onRemoteUpdate, refreshBabies]);
+  }, [sync.collabCode, onRemoteUpdate, refreshBabies]);
 
-  const createRoom = useCallback(async () => {
-    const code = generateRoomCode();
-    storeRoomCode(code);
-    setSync({ roomCode: code, syncing: true, connected: true });
+  const startCollab = useCallback(async () => {
+    const code = generateCollabCode();
+    storeCollabCode(code);
+    setSync({ collabCode: code, syncing: true, connected: true });
     await pushAllData(code);
     setSync(s => ({ ...s, syncing: false }));
     return code;
   }, []);
 
-  // joinRoom now fetches all data from Firebase and returns true if room exists
-  const joinRoom = useCallback(async (code: string): Promise<boolean> => {
-    storeRoomCode(code);
-    setSync({ roomCode: code, syncing: true, connected: true });
+  // joinCollab fetches all data from Firebase and returns true if the collaboration exists
+  const joinCollab = useCallback(async (code: string): Promise<boolean> => {
+    storeCollabCode(code);
+    setSync({ collabCode: code, syncing: true, connected: true });
 
     try {
-      const roomExists = await fetchRoomData(code);
-      if (!roomExists) {
-        // Room doesn't exist — clean up
-        clearRoomCode();
-        setSync({ roomCode: null, syncing: false, connected: false });
+      const exists = await fetchCollabData(code);
+      if (!exists) {
+        // Collaboration doesn't exist — clean up
+        clearCollabCode();
+        setSync({ collabCode: null, syncing: false, connected: false });
         return false;
       }
 
@@ -91,45 +92,45 @@ export function SyncProvider({ children }: { children: ReactNode }) {
       setSync(s => ({ ...s, syncing: false }));
       return true;
     } catch (e) {
-      console.warn('Join room failed:', e);
-      clearRoomCode();
-      setSync({ roomCode: null, syncing: false, connected: false });
+      console.warn('Join collaboration failed:', e);
+      clearCollabCode();
+      setSync({ collabCode: null, syncing: false, connected: false });
       return false;
     }
   }, [refreshBabies]);
 
-  const leaveRoom = useCallback(() => {
-    clearRoomCode();
-    setSync({ roomCode: null, syncing: false, connected: false });
+  const leaveCollab = useCallback(() => {
+    clearCollabCode();
+    setSync({ collabCode: null, syncing: false, connected: false });
   }, []);
 
   const syncPush = useCallback(async (
-    collection: 'feeds' | 'diapers' | 'pumps' | 'babies',
+    collection: SyncCollection,
     id: string,
     data: any
   ) => {
-    if (!sync.roomCode) return;
+    if (!sync.collabCode) return;
     try {
-      await pushEntry(sync.roomCode, collection, id, data);
+      await pushEntry(sync.collabCode, collection, id, data);
     } catch (e) {
       console.warn('Sync push failed (will retry on next sync):', e);
     }
-  }, [sync.roomCode]);
+  }, [sync.collabCode]);
 
   const syncRemove = useCallback(async (
-    collection: 'feeds' | 'diapers' | 'pumps' | 'babies',
+    collection: SyncCollection,
     id: string
   ) => {
-    if (!sync.roomCode) return;
+    if (!sync.collabCode) return;
     try {
-      await removeEntry(sync.roomCode, collection, id);
+      await removeEntry(sync.collabCode, collection, id);
     } catch (e) {
       console.warn('Sync remove failed:', e);
     }
-  }, [sync.roomCode]);
+  }, [sync.collabCode]);
 
   return (
-    <SyncCtx.Provider value={{ sync, createRoom, joinRoom, leaveRoom, syncPush, syncRemove, onRemoteUpdate, setOnRemoteUpdate }}>
+    <SyncCtx.Provider value={{ sync, startCollab, joinCollab, leaveCollab, syncPush, syncRemove, onRemoteUpdate, setOnRemoteUpdate }}>
       {children}
     </SyncCtx.Provider>
   );

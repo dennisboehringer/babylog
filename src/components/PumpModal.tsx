@@ -7,6 +7,8 @@ import type { PumpEntry } from '../types';
 import Modal from './Modal';
 import DateTimeInput from './DateTimeInput';
 import NotesInput from './NotesInput';
+import { useLanguage } from '../context/LanguageContext';
+import { getCaregiverName } from '../caregiver';
 
 const OZ_PRESETS = [0.5, 1, 1.5, 2, 2.5, 3, 4];
 const ML_PRESETS = [15, 30, 45, 60, 75, 90, 120];
@@ -15,11 +17,14 @@ interface Props {
   open: boolean;
   onClose: () => void;
   onSaved: () => void;
+  entry?: PumpEntry | null;
 }
 
-export default function PumpModal({ open, onClose, onSaved }: Props) {
+export default function PumpModal({ open, onClose, onSaved, entry }: Props) {
   const { activeBaby } = useApp();
   const { syncPush } = useSync();
+  const { t } = useLanguage();
+  const isEdit = !!entry;
   const [side, setSide] = useState<'left' | 'right' | 'both'>('both');
   const [unit, setUnit] = useState<'oz' | 'mL'>(activeBaby?.unitPreference ?? 'oz');
   const [amount, setAmount] = useState<number | null>(null);
@@ -27,7 +32,30 @@ export default function PumpModal({ open, onClose, onSaved }: Props) {
   const [timestamp, setTimestamp] = useState(Date.now());
   const [notes, setNotes] = useState('');
 
-  useEffect(() => { if (open) setTimestamp(Date.now()); }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    if (entry) {
+      setSide(entry.side);
+      setUnit(entry.unit);
+      const presets = entry.unit === 'oz' ? OZ_PRESETS : ML_PRESETS;
+      if (entry.amount !== null && presets.includes(entry.amount)) {
+        setAmount(entry.amount);
+        setCustomAmount('');
+      } else {
+        setAmount(null);
+        setCustomAmount(entry.amount !== null ? String(entry.amount) : '');
+      }
+      setTimestamp(entry.timestamp);
+      setNotes(entry.notes ?? '');
+    } else {
+      setSide('both');
+      setUnit(activeBaby?.unitPreference ?? 'oz');
+      setAmount(null);
+      setCustomAmount('');
+      setTimestamp(Date.now());
+      setNotes('');
+    }
+  }, [open, entry, activeBaby]);
 
   const presets = unit === 'oz' ? OZ_PRESETS : ML_PRESETS;
   const effectiveAmount = amount ?? (customAmount ? parseFloat(customAmount) : null);
@@ -35,42 +63,44 @@ export default function PumpModal({ open, onClose, onSaved }: Props) {
   async function handleSave() {
     if (!activeBaby) return;
 
-    const entry: PumpEntry = {
-      id: uuid(),
-      babyId: activeBaby.id,
+    const now = Date.now();
+    const saved: PumpEntry = {
+      id: entry?.id ?? uuid(),
+      babyId: entry?.babyId ?? activeBaby.id,
       timestamp,
       side,
       amount: effectiveAmount,
       unit,
-      durationSec: null,
+      durationSec: entry?.durationSec ?? null,
       notes: notes || null,
-      createdAt: Date.now(),
+      createdAt: entry?.createdAt ?? now,
+      modifiedAt: now,
+      loggedBy: entry?.loggedBy ?? getCaregiverName(),
     };
 
-    await db.pumps.add(entry);
-    syncPush('pumps', entry.id, entry);
-    setSide('both');
-    setAmount(null);
-    setCustomAmount('');
-    setNotes('');
-    setTimestamp(Date.now());
+    if (isEdit) {
+      await db.pumps.put(saved);
+    } else {
+      await db.pumps.add(saved);
+    }
+    syncPush('pumps', saved.id, saved);
     onSaved();
     onClose();
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Pump">
+    <Modal open={open} onClose={onClose} title={t(isEdit ? 'modal.pump.edit' : 'modal.pump.new')}>
       {/* Side */}
       <div className="flex gap-2 mb-4">
         {(['left', 'right', 'both'] as const).map(s => (
           <button
             key={s}
             onClick={() => setSide(s)}
-            className={`flex-1 py-3 rounded-xl text-sm font-medium capitalize ${
+            className={`flex-1 py-3 rounded-xl text-sm font-medium ${
               side === s ? 'bg-accent-blue text-white' : 'bg-bg-card text-text-secondary'
             }`}
           >
-            {s}
+            {t(`option.${s}`)}
           </button>
         ))}
       </div>
@@ -107,13 +137,13 @@ export default function PumpModal({ open, onClose, onSaved }: Props) {
 
       {/* Custom */}
       <div className="mb-4">
-        <label className="text-text-secondary text-sm mb-1 block">Custom amount</label>
+        <label className="text-text-secondary text-sm mb-1 block">{t('label.customAmount')}</label>
         <input
           type="number"
           step={unit === 'oz' ? '0.1' : '1'}
           value={customAmount}
           onChange={e => { setCustomAmount(e.target.value); setAmount(null); }}
-          placeholder={`Enter ${unit}`}
+          placeholder={t('label.enterUnit', { unit })}
           className="w-full px-4 py-3 rounded-xl bg-bg-input text-text-primary text-base outline-none focus:ring-2 focus:ring-accent-blue"
         />
       </div>
@@ -125,7 +155,7 @@ export default function PumpModal({ open, onClose, onSaved }: Props) {
         onClick={handleSave}
         className="w-full py-4 rounded-2xl btn-success text-white font-semibold text-lg"
       >
-        Save
+        {t(isEdit ? 'btn.saveChanges' : 'btn.save')}
       </button>
     </Modal>
   );

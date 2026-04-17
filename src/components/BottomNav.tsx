@@ -1,13 +1,20 @@
+import { useLanguage } from '../context/LanguageContext';
+
+type TabKey = 'home' | 'trends' | 'reports' | 'chat' | 'settings';
+
 interface Props {
-  tab: 'home' | 'trends' | 'settings';
-  onTabChange: (tab: 'home' | 'trends' | 'settings') => void;
+  tab: TabKey;
+  onTabChange: (tab: TabKey) => void;
 }
 
 export default function BottomNav({ tab, onTabChange }: Props) {
+  const { t } = useLanguage();
   const tabs = [
-    { key: 'home' as const, label: 'Home', icon: HomeIcon },
-    { key: 'trends' as const, label: 'Trends', icon: TrendsIcon },
-    { key: 'settings' as const, label: 'Settings', icon: SettingsIcon },
+    { key: 'home' as const, label: t('nav.home'), icon: HomeIcon },
+    { key: 'trends' as const, label: t('nav.trends'), icon: TrendsIcon },
+    { key: 'chat' as const, label: t('nav.chat'), icon: ChatIcon },
+    { key: 'reports' as const, label: t('nav.reports'), icon: ReportsIcon },
+    { key: 'settings' as const, label: t('nav.settings'), icon: SettingsIcon },
   ];
 
   return (
@@ -18,7 +25,7 @@ export default function BottomNav({ tab, onTabChange }: Props) {
           <button
             key={t.key}
             onClick={() => onTabChange(t.key)}
-            className={`flex flex-col items-center gap-0.5 px-6 py-2 min-h-[48px] relative transition-colors ${
+            className={`flex flex-col items-center gap-0.5 px-3 py-2 min-h-[48px] relative transition-colors ${
               isActive ? 'text-accent-blue' : 'text-text-muted'
             }`}
           >
@@ -49,6 +56,27 @@ function TrendsIcon({ active }: { active: boolean }) {
       <line x1="18" y1="20" x2="18" y2="10" />
       <line x1="12" y1="20" x2="12" y2="4" />
       <line x1="6" y1="20" x2="6" y2="14" />
+    </svg>
+  );
+}
+
+function ReportsIcon({ active }: { active: boolean }) {
+  // Document with folded corner — suggests a printable report / one-pager.
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="8" y1="13" x2="16" y2="13" />
+      <line x1="8" y1="17" x2="13" y2="17" />
+    </svg>
+  );
+}
+
+function ChatIcon({ active }: { active: boolean }) {
+  // Speech bubble — suggests conversation / Q&A.
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.5 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
     </svg>
   );
 }

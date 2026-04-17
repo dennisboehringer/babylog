@@ -6,12 +6,14 @@ import {
   LinearScale,
   BarElement,
   Tooltip,
+  Legend,
 } from 'chart.js';
 import { useApp } from '../context/AppContext';
+import { useLanguage } from '../context/LanguageContext';
 import { db } from '../db';
 import type { FeedEntry, DiaperEntry, PumpEntry } from '../types';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip);
+ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 type Range = 7 | 14 | 30;
 
@@ -35,6 +37,7 @@ function getDaysArray(range: Range): { key: string; start: number; end: number }
 
 export default function TrendsScreen() {
   const { activeBaby } = useApp();
+  const { t } = useLanguage();
   const [range, setRange] = useState<Range>(7);
   const [feeds, setFeeds] = useState<FeedEntry[]>([]);
   const [diapers, setDiapers] = useState<DiaperEntry[]>([]);
@@ -56,12 +59,26 @@ export default function TrendsScreen() {
 
   const days = useMemo(() => getDaysArray(range), [range]);
   const labels = days.map(d => d.key);
+  const unit = activeBaby?.unitPreference ?? 'oz';
 
   const feedsPerDay = days.map(d => feeds.filter(f => f.timestamp >= d.start && f.timestamp < d.end).length);
-  const volumePerDay = days.map(d => {
-    const dayFeeds = feeds.filter(f => f.timestamp >= d.start && f.timestamp < d.end && f.type === 'bottle' && f.amount);
-    return +(dayFeeds.reduce((s, f) => s + (f.amount ?? 0), 0)).toFixed(1);
-  });
+
+  // Bottle volume split by milk type. Amounts are stored in each entry's own unit,
+  // so normalize to oz first, then convert to display unit at render time.
+  function sumOz(dayStart: number, dayEnd: number, predicate: (f: FeedEntry) => boolean): number {
+    return feeds
+      .filter(f => f.timestamp >= dayStart && f.timestamp < dayEnd && f.type === 'bottle' && f.amount && predicate(f))
+      .reduce((s, f) => s + (f.unit === 'mL' ? (f.amount ?? 0) / 29.5735 : (f.amount ?? 0)), 0);
+  }
+  const breastMilkOzPerDay = days.map(d => sumOz(d.start, d.end, f => f.milkType === 'breastmilk'));
+  const formulaOzPerDay = days.map(d => sumOz(d.start, d.end, f => f.milkType === 'formula'));
+  const unspecifiedOzPerDay = days.map(d => sumOz(d.start, d.end, f => f.milkType !== 'breastmilk' && f.milkType !== 'formula'));
+  const hasUnspecified = unspecifiedOzPerDay.some(v => v > 0);
+
+  const toUnit = (oz: number) => unit === 'oz' ? +oz.toFixed(1) : +(oz * 29.5735).toFixed(0);
+  const breastMilkPerDay = breastMilkOzPerDay.map(toUnit);
+  const formulaPerDay = formulaOzPerDay.map(toUnit);
+  const unspecifiedPerDay = unspecifiedOzPerDay.map(toUnit);
   const wetPerDay = days.map(d => diapers.filter(di => di.timestamp >= d.start && di.timestamp < d.end && (di.type === 'wet' || di.type === 'both')).length);
   const stoolPerDay = days.map(d => diapers.filter(di => di.timestamp >= d.start && di.timestamp < d.end && (di.type === 'stool' || di.type === 'both')).length);
 
@@ -84,7 +101,17 @@ export default function TrendsScreen() {
     },
   } as const;
 
-  const unit = activeBaby?.unitPreference ?? 'oz';
+  const stackedChartOpts = {
+    ...chartOpts,
+    plugins: { legend: { display: true, position: 'bottom' as const, labels: { color: '#8A94A6', font: { size: 10 }, boxWidth: 10, boxHeight: 10 } } },
+    scales: {
+      ...chartOpts.scales,
+      x: { ...chartOpts.scales.x, stacked: true },
+      y: { ...chartOpts.scales.y, stacked: true },
+    },
+  } as const;
+
+  // (unit already computed above)
 
   if (!activeBaby) return null;
 
@@ -100,13 +127,13 @@ export default function TrendsScreen() {
               range === r ? 'bg-accent-blue text-white shadow-sm' : 'text-text-secondary'
             }`}
           >
-            {r}d
+            {t(`trends.range.${r}`)}
           </button>
         ))}
       </div>
 
       {/* Feeds per day */}
-      <ChartCard title="Feeds per day" targetLine={8}>
+      <ChartCard title={t('trends.chart.feedsPerDay')} targetLabel={t('trends.chart.target', { n: 8 })}>
         <Bar
           data={{
             labels,
@@ -121,24 +148,44 @@ export default function TrendsScreen() {
         />
       </ChartCard>
 
-      {/* Volume per day */}
-      <ChartCard title={`Bottle volume (${unit}/day)`}>
+      {/* Volume per day — stacked by milk type */}
+      <ChartCard title={unit === 'oz' ? t('trends.chart.bottleVolumeOz') : t('trends.chart.bottleVolumeMl')}>
         <Bar
           data={{
             labels,
-            datasets: [{
-              data: unit === 'oz' ? volumePerDay : volumePerDay.map(v => +(v * 29.5735).toFixed(0)),
-              backgroundColor: '#F0B42960',
-              borderRadius: 6,
-              borderSkipped: false,
-            }],
+            datasets: [
+              {
+                label: t('milk.breastmilk'),
+                data: breastMilkPerDay,
+                backgroundColor: '#4A9EFF99',
+                borderRadius: 6,
+                borderSkipped: false,
+                stack: 'vol',
+              },
+              {
+                label: t('milk.formula'),
+                data: formulaPerDay,
+                backgroundColor: '#F0B42999',
+                borderRadius: 6,
+                borderSkipped: false,
+                stack: 'vol',
+              },
+              ...(hasUnspecified ? [{
+                label: t('milk.unspecified'),
+                data: unspecifiedPerDay,
+                backgroundColor: '#55607099',
+                borderRadius: 6,
+                borderSkipped: false,
+                stack: 'vol',
+              }] : []),
+            ],
           }}
-          options={chartOpts}
+          options={stackedChartOpts}
         />
       </ChartCard>
 
       {/* Wet diapers */}
-      <ChartCard title="Wet diapers per day">
+      <ChartCard title={t('trends.chart.wetDiapersPerDay')}>
         <Bar
           data={{
             labels,
@@ -154,7 +201,7 @@ export default function TrendsScreen() {
       </ChartCard>
 
       {/* Stools */}
-      <ChartCard title="Stools per day">
+      <ChartCard title={t('trends.chart.stoolsPerDay')}>
         <Bar
           data={{
             labels,
@@ -172,13 +219,13 @@ export default function TrendsScreen() {
   );
 }
 
-function ChartCard({ title, children, targetLine }: { title: string; children: React.ReactNode; targetLine?: number }) {
+function ChartCard({ title, children, targetLabel }: { title: string; children: React.ReactNode; targetLabel?: string }) {
   return (
     <div className="glass-card rounded-2xl p-4 mb-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-xs font-medium uppercase tracking-wider text-text-secondary">{title}</h3>
-        {targetLine && (
-          <span className="text-xs text-accent-green font-medium">Target: {targetLine}</span>
+        {targetLabel && (
+          <span className="text-xs text-accent-green font-medium">{targetLabel}</span>
         )}
       </div>
       <div className="h-[160px]">

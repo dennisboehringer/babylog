@@ -7,12 +7,14 @@ import type { DiaperEntry } from '../types';
 import Modal from './Modal';
 import DateTimeInput from './DateTimeInput';
 import NotesInput from './NotesInput';
+import { useLanguage } from '../context/LanguageContext';
+import { getCaregiverName } from '../caregiver';
 
 const STOOL_COLORS = [
-  { value: 'yellow' as const, label: 'Yellow', hex: '#D4A72C' },
-  { value: 'green' as const, label: 'Green', hex: '#2EA043' },
-  { value: 'brown' as const, label: 'Brown', hex: '#8B6914' },
-  { value: 'black' as const, label: 'Black', hex: '#3D3D3D' },
+  { value: 'yellow' as const, tKey: 'stool.color.yellow', hex: '#D4A72C' },
+  { value: 'green' as const, tKey: 'stool.color.green', hex: '#2EA043' },
+  { value: 'brown' as const, tKey: 'stool.color.brown', hex: '#8B6914' },
+  { value: 'black' as const, tKey: 'stool.color.black', hex: '#3D3D3D' },
 ];
 
 const CONSISTENCIES = ['seedy', 'runny', 'formed', 'mucousy'] as const;
@@ -22,18 +24,36 @@ interface Props {
   onClose: () => void;
   onSaved: () => void;
   initialType?: 'wet' | 'stool' | 'both';
+  entry?: DiaperEntry | null;
 }
 
-export default function DiaperModal({ open, onClose, onSaved, initialType }: Props) {
+export default function DiaperModal({ open, onClose, onSaved, initialType, entry }: Props) {
   const { activeBaby } = useApp();
   const { syncPush } = useSync();
+  const { t } = useLanguage();
+  const isEdit = !!entry;
   const [type, setType] = useState<'wet' | 'stool' | 'both'>(initialType ?? 'wet');
   const [stoolColor, setStoolColor] = useState<DiaperEntry['stoolColor']>(null);
   const [stoolConsistency, setStoolConsistency] = useState<DiaperEntry['stoolConsistency']>(null);
   const [timestamp, setTimestamp] = useState(Date.now());
   const [notes, setNotes] = useState('');
 
-  useEffect(() => { if (open) setTimestamp(Date.now()); }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    if (entry) {
+      setType(entry.type);
+      setStoolColor(entry.stoolColor);
+      setStoolConsistency(entry.stoolConsistency);
+      setTimestamp(entry.timestamp);
+      setNotes(entry.notes ?? '');
+    } else {
+      setType(initialType ?? 'wet');
+      setStoolColor(null);
+      setStoolConsistency(null);
+      setTimestamp(Date.now());
+      setNotes('');
+    }
+  }, [open, entry, initialType]);
 
   const showStoolDetails = type === 'stool' || type === 'both';
 
@@ -46,41 +66,43 @@ export default function DiaperModal({ open, onClose, onSaved, initialType }: Pro
   async function handleSave() {
     if (!activeBaby) return;
 
-    const entry: DiaperEntry = {
-      id: uuid(),
-      babyId: activeBaby.id,
+    const now = Date.now();
+    const saved: DiaperEntry = {
+      id: entry?.id ?? uuid(),
+      babyId: entry?.babyId ?? activeBaby.id,
       timestamp,
       type,
       stoolColor: showStoolDetails ? stoolColor : null,
       stoolConsistency: showStoolDetails ? stoolConsistency : null,
       notes: notes || null,
-      createdAt: Date.now(),
+      createdAt: entry?.createdAt ?? now,
+      modifiedAt: now,
+      loggedBy: entry?.loggedBy ?? getCaregiverName(),
     };
 
-    await db.diapers.add(entry);
-    syncPush('diapers', entry.id, entry);
-    setType(initialType ?? 'wet');
-    setStoolColor(null);
-    setStoolConsistency(null);
-    setNotes('');
-    setTimestamp(Date.now());
+    if (isEdit) {
+      await db.diapers.put(saved);
+    } else {
+      await db.diapers.add(saved);
+    }
+    syncPush('diapers', saved.id, saved);
     onSaved();
     onClose();
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Diaper">
+    <Modal open={open} onClose={onClose} title={t(isEdit ? 'modal.diaper.edit' : 'modal.diaper.new')}>
       {/* Type selector */}
       <div className="flex gap-2 mb-4">
-        {(['wet', 'stool', 'both'] as const).map(t => (
+        {(['wet', 'stool', 'both'] as const).map(dt => (
           <button
-            key={t}
-            onClick={() => setType(t)}
-            className={`flex-1 py-3 rounded-xl text-sm font-medium capitalize ${
-              type === t ? 'bg-accent-blue text-white' : 'bg-bg-card text-text-secondary'
+            key={dt}
+            onClick={() => setType(dt)}
+            className={`flex-1 py-3 rounded-xl text-sm font-medium ${
+              type === dt ? 'bg-accent-blue text-white' : 'bg-bg-card text-text-secondary'
             }`}
           >
-            {t === 'both' ? 'Both' : t === 'wet' ? 'Wet' : 'Stool'}
+            {t(`diaper.type.${dt}`)}
           </button>
         ))}
       </div>
@@ -88,7 +110,7 @@ export default function DiaperModal({ open, onClose, onSaved, initialType }: Pro
       {/* Stool details */}
       {showStoolDetails && (
         <>
-          <label className="text-text-secondary text-sm mb-2 block">Color</label>
+          <label className="text-text-secondary text-sm mb-2 block">{t('label.stoolColor')}</label>
           <div className="flex gap-3 mb-4">
             {STOOL_COLORS.map(c => (
               <button
@@ -103,7 +125,7 @@ export default function DiaperModal({ open, onClose, onSaved, initialType }: Pro
                     borderColor: stoolColor === c.value ? '#E1E4E8' : 'transparent',
                   }}
                 />
-                <span className="text-xs text-text-secondary">{c.label}</span>
+                <span className="text-xs text-text-secondary">{t(c.tKey)}</span>
               </button>
             ))}
           </div>
@@ -111,22 +133,22 @@ export default function DiaperModal({ open, onClose, onSaved, initialType }: Pro
           {showBlackAlert && (
             <div className="bg-accent-red/15 border border-accent-red/30 rounded-xl p-3 mb-4">
               <p className="text-sm text-accent-red">
-                Day 5+: dark stools may need attention — contact your provider.
+                {t('diaper.alert.blackStool')}
               </p>
             </div>
           )}
 
-          <label className="text-text-secondary text-sm mb-2 block">Consistency</label>
+          <label className="text-text-secondary text-sm mb-2 block">{t('label.consistency')}</label>
           <div className="grid grid-cols-2 gap-2 mb-4">
             {CONSISTENCIES.map(c => (
               <button
                 key={c}
                 onClick={() => setStoolConsistency(c)}
-                className={`py-3 rounded-xl text-sm font-medium capitalize ${
+                className={`py-3 rounded-xl text-sm font-medium ${
                   stoolConsistency === c ? 'bg-accent-blue text-white' : 'bg-bg-card text-text-secondary'
                 }`}
               >
-                {c}
+                {t(`stool.consistency.${c}`)}
               </button>
             ))}
           </div>
@@ -140,7 +162,7 @@ export default function DiaperModal({ open, onClose, onSaved, initialType }: Pro
         onClick={handleSave}
         className="w-full py-4 rounded-2xl btn-success text-white font-semibold text-lg"
       >
-        Save
+        {t(isEdit ? 'btn.saveChanges' : 'btn.save')}
       </button>
     </Modal>
   );

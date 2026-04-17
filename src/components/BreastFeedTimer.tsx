@@ -6,6 +6,8 @@ import { useSync } from '../context/SyncContext';
 import type { FeedEntry } from '../types';
 import DateTimeInput from './DateTimeInput';
 import NotesInput from './NotesInput';
+import { getCaregiverName } from '../caregiver';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Props {
   open: boolean;
@@ -41,6 +43,7 @@ function clearTimer() {
 export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
   const { activeBaby } = useApp();
   const { syncPush } = useSync();
+  const { t } = useLanguage();
   const [timer, setTimer] = useState<TimerState>(() => {
     return loadTimer() ?? {
       activeSide: null,
@@ -144,8 +147,10 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
       lastSide,
       amount: null,
       unit: activeBaby.unitPreference,
+      milkType: null,
       notes: notes || null,
       createdAt: Date.now(),
+      loggedBy: getCaregiverName(),
     };
 
     await db.feeds.add(entry);
@@ -185,23 +190,23 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-bg-primary max-w-[420px] mx-auto animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3">
+      {/* Header — pt respects the iPhone notch safe area */}
+      <div className="flex items-center justify-between px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
         <button onClick={onClose} className="text-text-secondary text-sm min-h-[48px] px-2 font-medium">
-          Back
+          {t('btn.back')}
         </button>
-        <span className="text-[17px] font-semibold">Breast Feed</span>
+        <span className="text-[17px] font-semibold">{t('modal.breastFeed.title')}</span>
         <button
           onClick={handleReset}
           className="text-accent-red text-sm min-h-[48px] px-2 font-medium"
         >
-          Reset
+          {t('btn.reset')}
         </button>
       </div>
 
       {/* Total time */}
       <div className="text-center py-3">
-        <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-1">Total</p>
+        <p className="text-xs text-text-muted font-medium uppercase tracking-wider mb-1">{t('timer.total')}</p>
         <p className="text-3xl font-bold tabular-nums">{formatMs(totalMs)}</p>
       </div>
 
@@ -215,10 +220,10 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
               : 'glass-card text-text-primary active:scale-[0.98]'
           }`}
         >
-          <span className="text-lg font-semibold mb-2">LEFT</span>
+          <span className="text-lg font-semibold mb-2">{t('timer.left')}</span>
           <span className="text-4xl font-bold tabular-nums">{formatMs(leftMs)}</span>
           {timer.activeSide === 'left' && (
-            <span className="text-sm mt-2 opacity-70">Tap to pause</span>
+            <span className="text-sm mt-2 opacity-70">{t('timer.tapToPause')}</span>
           )}
         </button>
 
@@ -230,10 +235,10 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
               : 'glass-card text-text-primary active:scale-[0.98]'
           }`}
         >
-          <span className="text-lg font-semibold mb-2">RIGHT</span>
+          <span className="text-lg font-semibold mb-2">{t('timer.right')}</span>
           <span className="text-4xl font-bold tabular-nums">{formatMs(rightMs)}</span>
           {timer.activeSide === 'right' && (
-            <span className="text-sm mt-2 opacity-70">Tap to pause</span>
+            <span className="text-sm mt-2 opacity-70">{t('timer.tapToPause')}</span>
           )}
         </button>
       </div>
@@ -245,13 +250,13 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
             onClick={() => setShowExtras(true)}
             className="w-full py-3 text-sm text-text-muted font-medium"
           >
-            + Add weight, time, or notes
+            {t('timer.addExtras')}
           </button>
         ) : (
           <>
             <div className="flex gap-3 mb-4">
               <div className="flex-1">
-                <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">Left oz</label>
+                <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">{t('label.leftOz', { unit: 'oz' })}</label>
                 <input
                   type="number"
                   step="0.1"
@@ -262,7 +267,7 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
                 />
               </div>
               <div className="flex-1">
-                <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">Right oz</label>
+                <label className="text-text-muted text-xs font-medium uppercase tracking-wider mb-1.5 block">{t('label.rightOz', { unit: 'oz' })}</label>
                 <input
                   type="number"
                   step="0.1"
@@ -286,7 +291,7 @@ export default function BreastFeedTimer({ open, onClose, onSaved }: Props) {
           disabled={!hasAnyTime && !isRunning}
           className="w-full py-4 rounded-2xl btn-success text-white font-semibold text-lg"
         >
-          Done
+          {t('btn.done')}
         </button>
       </div>
     </div>

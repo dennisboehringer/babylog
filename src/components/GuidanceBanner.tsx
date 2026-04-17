@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 interface Props {
   dob: string;
@@ -13,6 +14,7 @@ interface Guidance {
 }
 
 export default function GuidanceBanner({ dob, feedCount: _feedCount, wetCount }: Props) {
+  const { t } = useLanguage();
   const [dismissed, setDismissed] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem('babylog_dismissed_guidance');
@@ -28,27 +30,15 @@ export default function GuidanceBanner({ dob, feedCount: _feedCount, wetCount }:
     const items: Guidance[] = [];
 
     if (ageDays <= 2) {
-      items.push({
-        key: 'day1-2',
-        message: 'Baby may be sleepy. Wake to feed every 2-3 hours.',
-        type: 'info',
-      });
+      items.push({ key: 'day1-2', message: t('guidance.day1_2'), type: 'info' });
     }
 
     if (ageDays >= 2 && ageDays <= 4) {
-      items.push({
-        key: 'day3',
-        message: 'Hungry Day — target 8+ feeds/24h. Milk is transitioning.',
-        type: 'warning',
-      });
+      items.push({ key: 'day3', message: t('guidance.day3'), type: 'warning' });
     }
 
     if (ageDays >= 5 && ageDays <= 7) {
-      items.push({
-        key: 'day5-stool',
-        message: 'Stools should be yellow, runny, and seedy by now.',
-        type: 'info',
-      });
+      items.push({ key: 'day5-stool', message: t('guidance.day5_stool'), type: 'info' });
     }
 
     if (ageDays >= 0 && ageDays <= 7) {
@@ -56,22 +46,18 @@ export default function GuidanceBanner({ dob, feedCount: _feedCount, wetCount }:
       if (wetCount < expectedWet) {
         items.push({
           key: `wet-target-day${ageDays}`,
-          message: `Day ${ageDays + 1}: aim for ${expectedWet}+ wet diapers today (currently ${wetCount}).`,
+          message: t('guidance.wetTarget', { day: ageDays + 1, target: expectedWet, current: wetCount }),
           type: 'warning',
         });
       }
     }
 
     if (ageDays >= 30) {
-      items.push({
-        key: 'month1-stool',
-        message: 'After 1 month, baby may stool once every 7-10 days — this is normal.',
-        type: 'info',
-      });
+      items.push({ key: 'month1-stool', message: t('guidance.month1_stool'), type: 'info' });
     }
 
     return items;
-  }, [ageDays, wetCount]);
+  }, [ageDays, wetCount, t]);
 
   function dismiss(key: string) {
     const next = new Set(dismissed);

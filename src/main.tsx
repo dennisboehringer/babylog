@@ -2,6 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppProvider } from './context/AppContext';
 import { SyncProvider } from './context/SyncContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { LanguageProvider } from './context/LanguageContext';
+import { MealAnalysisProvider } from './context/MealAnalysisContext';
+import { detectLanguage, translate } from './i18n';
 import App from './App';
 import './index.css';
 
@@ -55,7 +59,7 @@ function showUpdateToast() {
         max-width: 320px; text-align: center;
         animation: slideUp 0.3s ease-out;
       " onclick="window.location.reload()">
-        New version available — tap to refresh
+        ${translate(detectLanguage(), 'app.updateAvailable')}
       </div>
     `;
     document.body.appendChild(toast);
@@ -66,10 +70,16 @@ registerSW();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AppProvider>
-      <SyncProvider>
-        <App />
-      </SyncProvider>
-    </AppProvider>
+    <LanguageProvider>
+      <ThemeProvider>
+        <AppProvider>
+          <SyncProvider>
+            <MealAnalysisProvider>
+              <App />
+            </MealAnalysisProvider>
+          </SyncProvider>
+        </AppProvider>
+      </ThemeProvider>
+    </LanguageProvider>
   </StrictMode>,
 );
